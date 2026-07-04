@@ -92,8 +92,13 @@ def display_anova(results):
 
     if results['post_hoc']:
         post_hoc_df = pd.DataFrame(results['post_hoc'])
-        display_header("Post-Hoc Comparisons (Bonferroni)")
-        footer = "* Note: Bonferroni adjustment multiplies the p-value by the number of comparisons. Effect size uses the model's residual variance."
+        if test_name == "Kruskal-Wallis H Test":
+            ph_title = "Dunn's Post-Hoc Comparisons (Bonferroni)"
+        else:
+            ph_title = "Post-Hoc Comparisons (Bonferroni)"
+
+        display_header(ph_title)
+        footer = "* Note: Bonferroni adjustment multiplies the p-value by the number of comparisons. Effect size uses the model's residual variance or rank-based r."
         display_table(post_hoc_df, footer=footer, highlight_col='p (bonf)', highlight_threshold=0.05)
 
 def display_ttest(results):
@@ -118,7 +123,6 @@ def display_ttest(results):
         homog_status = "[green]Pass[/green]" if results['Homogeneity p'] > 0.05 else "[red]Fail[/red]"
         display_info(f"- Homogeneity (Levene): {homog_status} (p = {results['Homogeneity p']:.3f})")
 
-    # Add Wilcoxon p-value info if it was used or if normality failed
     if "Wilcoxon" in test_name:
         display_info(f"- Wilcoxon signed-rank p-value: {results['p']:.3f}")
 

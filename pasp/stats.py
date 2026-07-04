@@ -260,38 +260,67 @@ def anova_oneway(df, var, group_var):
         pairs = list(combinations(groups, 2))
         num_comparisons = len(pairs)
 
-        for g1, g2 in pairs:
-            d1 = clean_df[clean_df[group_var] == g1][var]
-            d2 = clean_df[clean_df[group_var] == g2][var]
+        if test_name == "Kruskal-Wallis H Test":
+            # Dunn's test implementation
+            all_data = clean_df[var]
+            ranks = all_data.rank()
+            clean_df['rank'] = ranks
+            mean_ranks = {g: clean_df[clean_df[group_var] == g]['rank'].mean() for g in groups}
+            n_total = len(clean_df)
 
-            mean1 = d1.mean()
-            mean2 = d2.mean()
-            mean_diff = mean1 - mean2
-            n1, n2 = len(d1), len(d2)
+            # Pooled variance for Dunn's test
+            # Standard error of difference in mean ranks: sqrt( [N(N+1)/12] * [1/ni + 1/nj] )
+            pooled_var = n_total * (n_total + 1) / 12.0
 
-            if test_name == "Kruskal-Wallis H Test":
-                u_stat, p_raw = stats.mannwhitneyu(d1, d2)
-                t_val = u_stat
-                es = u_stat / (n1 * n2)
-            else:
+            for g1, g2 in pairs:
+                d1 = clean_df[clean_df[group_var] == g1][var]
+                d2 = clean_df[clean_df[group_var] == g2][var]
+                n1, n2 = len(d1), len(d2)
+
+                rank_diff = mean_ranks[g1] - mean_ranks[g2]
+                se = np.sqrt(pooled_var * (1.0/n1 + 1.0/n2))
+                z_val = rank_diff / se
+                p_raw = 2 * (1 - stats.norm.cdf(abs(z_val)))
+                p_bonf = min(1.0, p_raw * num_comparisons)
+
+                post_hoc_results.append({
+                    'Group 1': g1,
+                    'Group 2': g2,
+                    'Mean 1': d1.mean(),
+                    'Mean 2': d2.mean(),
+                    'Mean Diff': d1.mean() - d2.mean(),
+                    'z': z_val,
+                    'p (bonf)': p_bonf,
+                    'Effect': z_val / np.sqrt(n_total) # r effect size approximation
+                })
+        else:
+            for g1, g2 in pairs:
+                d1 = clean_df[clean_df[group_var] == g1][var]
+                d2 = clean_df[clean_df[group_var] == g2][var]
+
+                mean1 = d1.mean()
+                mean2 = d2.mean()
+                mean_diff = mean1 - mean2
+                n1, n2 = len(d1), len(d2)
+
                 se = np.sqrt(ms_error * (1/n1 + 1/n2))
                 t_val = mean_diff / se if se > 0 else 0
                 df_post = len(clean_df) - num_groups
                 p_raw = 2 * (1 - stats.t.cdf(abs(t_val), df_post))
                 es = mean_diff / np.sqrt(ms_error) if ms_error > 0 else 0
 
-            p_bonf = min(1.0, p_raw * num_comparisons)
+                p_bonf = min(1.0, p_raw * num_comparisons)
 
-            post_hoc_results.append({
-                'Group 1': g1,
-                'Group 2': g2,
-                'Mean 1': mean1,
-                'Mean 2': mean2,
-                'Mean Diff': mean_diff,
-                't/U': t_val,
-                'p (bonf)': p_bonf,
-                'Effect': es
-            })
+                post_hoc_results.append({
+                    'Group 1': g1,
+                    'Group 2': g2,
+                    'Mean 1': mean1,
+                    'Mean 2': mean2,
+                    'Mean Diff': mean_diff,
+                    't': t_val,
+                    'p (bonf)': p_bonf,
+                    'Effect': es
+                })
 
     return {
         'global': global_results,
