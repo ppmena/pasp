@@ -117,15 +117,16 @@ def main():
             ui.display_info(f"Columns: {', '.join(df.columns)}")
 
         if args.descriptives or args.auto:
-            vars_to_analyze = args.vars if args.vars else df.select_dtypes(include=['number']).columns.tolist()
+            vars_to_analyze = args.vars if args.vars else df.select_dtypes(include=['number', 'object', 'bool']).columns.tolist()
             results = stats.descriptives(df, vars_to_analyze)
             ui.display_header("Descriptive Statistics")
-            ui.display_table(results)
+            footer = "* Nota: Las variables marcadas con asterisco han sido identificadas como ordinales (discretas con max 4 valores). Sus estadísticos de centralización y dispersión deben interpretarse con cautela."
+            ui.display_table(results, footer=footer)
 
         if args.anova:
             results = stats.anova_oneway(df, args.anova[0], args.anova[1])
-            ui.display_header("One-way ANOVA")
-            ui.display_dict_as_table(results)
+            ui.display_header("One-way ANOVA Result")
+            ui.display_anova(results)
 
         if args.correlation:
             results = stats.correlation(df, args.correlation)
@@ -217,10 +218,11 @@ def main():
     df = data.load_data(args.file)
 
     if args.command == "descriptives":
-        vars_to_analyze = args.vars if args.vars else df.select_dtypes(include=['number']).columns.tolist()
+        vars_to_analyze = args.vars if args.vars else df.select_dtypes(include=['number', 'object', 'bool']).columns.tolist()
         results = stats.descriptives(df, vars_to_analyze)
         ui.display_header("Descriptive Statistics")
-        ui.display_table(results)
+        footer = "* Nota: Las variables marcadas con asterisco han sido identificadas como ordinales (discretas con max 4 valores). Sus estadísticos de centralización y dispersión deben interpretarse con cautela."
+        ui.display_table(results, footer=footer)
     elif args.command == "ttest-one":
         results = stats.ttest_one_sample(df, args.var, args.value)
         ui.display_header("One Sample T-Test")
@@ -237,8 +239,8 @@ def main():
         ui.display_dict_as_table(results)
     elif args.command == "anova":
         results = stats.anova_oneway(df, args.var, args.group)
-        ui.display_header("One-way ANOVA")
-        ui.display_dict_as_table(results)
+        ui.display_header("One-way ANOVA Result")
+        ui.display_anova(results)
     elif args.command == "correlation":
         results = stats.correlation(df, args.vars)
         ui.display_header("Correlation Matrix")
