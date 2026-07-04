@@ -1,9 +1,7 @@
-import numpy as np
-from scipy import stats
-import pandas as pd
-
 def descriptives(df, vars_list):
     """Calculate descriptive statistics for a list of variables."""
+    import numpy as np
+    import pandas as pd
     results = []
     for var in vars_list:
         data = df[var].dropna()
@@ -26,6 +24,8 @@ def descriptives(df, vars_list):
 
 def ttest_one_sample(df, var, test_value=0):
     """Perform a one-sample t-test."""
+    import numpy as np
+    from scipy import stats
     data = df[var].dropna()
     t_stat, p_val = stats.ttest_1samp(data, test_value)
 
@@ -44,9 +44,11 @@ def ttest_one_sample(df, var, test_value=0):
 
 def ttest_independent(df, var, group_var):
     """Perform an independent samples t-test."""
+    import numpy as np
+    from scipy import stats
     groups = df[group_var].unique()
     if len(groups) != 2:
-        raise ValueError("Grouping variable must have exactly two levels.")
+        raise ValueError(f"Grouping variable '{group_var}' must have exactly two levels. Found: {groups}")
 
     g1_data = df[df[group_var] == groups[0]][var].dropna()
     g2_data = df[df[group_var] == groups[1]][var].dropna()
@@ -72,6 +74,8 @@ def ttest_independent(df, var, group_var):
 
 def ttest_paired(df, var1, var2):
     """Perform a paired samples t-test."""
+    import numpy as np
+    from scipy import stats
     temp_df = df[[var1, var2]].dropna()
     g1_data = temp_df[var1]
     g2_data = temp_df[var2]
@@ -91,18 +95,40 @@ def ttest_paired(df, var1, var2):
         "Cohen's d": d
     }
 
+def anova_oneway(df, var, group_var):
+    """Perform a one-way ANOVA."""
+    from scipy import stats
+    import pandas as pd
+
+    groups = df[group_var].unique()
+    data_groups = [df[df[group_var] == g][var].dropna() for g in groups]
+
+    f_stat, p_val = stats.f_oneway(*data_groups)
+
+    return {
+        'Variable': var,
+        'Grouping': group_var,
+        'F': f_stat,
+        'p': p_val,
+        'Num Groups': len(groups)
+    }
+
+def correlation(df, vars_list):
+    """Calculate Pearson correlation matrix."""
+    import pandas as pd
+    temp_df = df[vars_list].dropna()
+    corr_matrix = temp_df.corr()
+    return corr_matrix
+
 def linear_regression(df, dep_var, indep_vars):
     """Perform a simple/multiple linear regression."""
-    # For now, simple linear regression (one indep var)
+    from scipy import stats
     if isinstance(indep_vars, str):
         indep_vars = [indep_vars]
 
     temp_df = df[[dep_var] + indep_vars].dropna()
     y = temp_df[dep_var]
     X = temp_df[indep_vars]
-
-    # Use scipy for simple linear regression or we could use statsmodels if we wanted more detail
-    # Given the goal of being lightweight, we'll stick with scipy or numpy for now
 
     if len(indep_vars) == 1:
         x = X.iloc[:, 0]
@@ -119,5 +145,4 @@ def linear_regression(df, dep_var, indep_vars):
             'Std.Error': std_err
         }
     else:
-        # Multiple regression would need a different approach (e.g. np.linalg.lstsq)
         raise NotImplementedError("Multiple regression not yet implemented.")

@@ -6,66 +6,115 @@ PASP is a lightweight, local statistical analysis tool designed for the terminal
 
 - **Descriptive Statistics**: Mean, Median, Mode, Standard Deviation, Skewness, Kurtosis, and more.
 - **T-Tests**: One-sample, Independent samples, and Paired samples t-tests.
+- **ANOVA**: One-way Analysis of Variance.
+- **Correlation**: Pearson correlation matrix.
 - **Linear Regression**: Simple linear regression with key diagnostic statistics.
-- **Beautiful Output**: Clean, APA-style tables in your terminal using `rich`.
-- **Lightweight**: Fast execution and minimal dependencies, perfect for mobile devices.
+- **Beautiful Output**: Clean, APA-style tables in your terminal using `rich` (with plain-text fallback).
+- **Lightweight & Lazy**: Fast startup; heavy dependencies are only loaded when needed.
+- **Diagnostics**: Built-in tools to check your environment and fix installation issues.
 
 ## Installation
 
-You can install PASP directly from GitHub:
+### Quick Installation
 
 ```bash
-pip install git+https://github.com/user/pasp.git
+pip install git+https://github.com/ppmena/PASP.git
 ```
 
-Or for local development:
+### Recommended Installation for Termux (Android)
 
-```bash
-git clone https://github.com/user/pasp.git
-cd pasp
-pip install .
-```
+To avoid issues with scientific dependencies, follow these steps:
+
+1. **Update packages**:
+   ```bash
+   pkg update && pkg upgrade
+   ```
+2. **Install build tools and dependencies**:
+   ```bash
+   pkg install python clang make cmake pkg-config ninja meson
+   ```
+3. **Install PASP**:
+   ```bash
+   pip install git+https://github.com/ppmena/PASP.git
+   ```
 
 ## Usage
 
-PASP is designed to be used from the command line.
+PASP supports two styles of usage.
 
-### Basic Descriptive Statistics
+### Style A: Direct usage on a file
 
 ```bash
-pasp descriptives data.csv --vars height weight
+# Automatic summary and descriptives
+pasp data.csv --auto
+
+# Show data summary only
+pasp data.csv --summary
+
+# Run specific analyses
+pasp data.csv --descriptives --vars height weight
+pasp data.csv --anova score group
+pasp data.csv --correlation var1 var2 var3
+pasp data.csv --ttest-ind score gender
+pasp data.csv --ttest-one height 170
+pasp data.csv --ttest-paired pre post
+pasp data.csv --regression weight height
 ```
 
-### T-Tests
+### Style B: Subcommands
 
 ```bash
-# Independent samples t-test
-pasp ttest-ind data.csv --group gender --vars score
-
-# Paired samples t-test
-pasp ttest-paired data.csv --vars pre_test post_test
+pasp descriptives data.csv var1 var2
+pasp anova data.csv score group
+pasp correlation data.csv var1 var2 var3
+pasp ttest-ind data.csv score gender
+pasp ttest-one data.csv height 170
+pasp ttest-paired data.csv pre post
+pasp regression data.csv weight height
 ```
 
-### Linear Regression
+## Diagnostics and Help
+
+If you encounter issues, use the built-in diagnostic tools (these work even without dependencies):
 
 ```bash
-pasp regression data.csv --dep weight --indep height
+# Check system and dependencies
+pasp doctor
+
+# Show detailed installation help for Termux/Linux/macOS
+pasp install-help
+
+# List available example datasets
+pasp examples
 ```
 
 ## Example Datasets
 
-PASP includes example datasets in the `examples/` directory to help you get started:
+PASP includes example datasets. You can list them with `pasp examples`.
 
-- **`descriptives_example.csv`**: General data for exploring descriptive statistics.
-  - *Usage*: `pasp descriptives examples/descriptives_example.csv`
-- **`ttest_one_sample_example.csv`**: IQ scores to compare against a known population mean (e.g., 100).
-  - *Usage*: `pasp ttest-one examples/ttest_one_sample_example.csv --vars iq_score --value 100`
-- **`ttest_ind_example.csv`**: Recovery time for Control vs. Treatment groups.
-  - *Usage*: `pasp ttest-ind examples/ttest_ind_example.csv --vars recovery_time --group treatment`
-- **`ttest_paired_example.csv`**: Pre-test and post-test scores for a group of students.
-  - *Usage*: `pasp ttest-paired examples/ttest_paired_example.csv --vars pre_test post_test`
-- **`regression_example.csv`**: Relationship between hours studied and exam scores.
-  - *Usage*: `pasp regression examples/regression_example.csv --dep exam_score --indep hours_studied`
+- **`ejemplo_anova.csv`**: Data for ANOVA and descriptives.
+  - *Usage*: `pasp anova examples/ejemplo_anova.csv score age`
+- **`ejemplo_correlacion.csv`**: Data for correlation analysis.
+  - *Usage*: `pasp correlation examples/ejemplo_correlacion.csv var1 var2 var3`
+- **`ejemplo_ttest.csv`**: Data for independent samples t-test.
+  - *Usage*: `pasp ttest-ind examples/ejemplo_ttest.csv recovery_time treatment`
+- **`ejemplo_regresion.csv`**: Relationship between hours studied and exam scores.
+  - *Usage*: `pasp regression examples/ejemplo_regresion.csv exam_score hours_studied`
+
+## Troubleshooting
+
+### `ninja` or `mesonpy` errors in Termux
+Do not install `ninja` or `meson` via `pip`. Install them using `pkg`:
+```bash
+pkg install ninja meson
+```
+
+### `pasp` command not found
+Ensure your Python bin directory is in your PATH. In Termux:
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
 
 ## License
 

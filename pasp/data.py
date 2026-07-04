@@ -1,8 +1,8 @@
-import pandas as pd
 import sys
 
 def load_data(filepath):
     """Load data from a CSV or TSV file."""
+    import pandas as pd
     try:
         if filepath.endswith('.csv'):
             df = pd.read_csv(filepath)
