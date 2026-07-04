@@ -1,0 +1,15 @@
+id,treatment,recovery_time
+1,Control,12
+2,Control,14
+3,Control,11
+4,Control,15
+5,Control,13
+6,Control,12
+7,Control,14
+8,Treatment,8
+9,Treatment,7
+10,Treatment,9
+11,Treatment,10
+12,Treatment,8
+13,Treatment,7
+14,Treatment,9

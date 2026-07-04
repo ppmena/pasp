@@ -52,6 +52,21 @@ pasp ttest-paired data.csv --vars pre_test post_test
 pasp regression data.csv --dep weight --indep height
 ```
 
+## Example Datasets
+
+PASP includes example datasets in the `examples/` directory to help you get started:
+
+- **`descriptives_example.csv`**: General data for exploring descriptive statistics.
+  - *Usage*: `pasp descriptives examples/descriptives_example.csv`
+- **`ttest_one_sample_example.csv`**: IQ scores to compare against a known population mean (e.g., 100).
+  - *Usage*: `pasp ttest-one examples/ttest_one_sample_example.csv --vars iq_score --value 100`
+- **`ttest_ind_example.csv`**: Recovery time for Control vs. Treatment groups.
+  - *Usage*: `pasp ttest-ind examples/ttest_ind_example.csv --vars recovery_time --group treatment`
+- **`ttest_paired_example.csv`**: Pre-test and post-test scores for a group of students.
+  - *Usage*: `pasp ttest-paired examples/ttest_paired_example.csv --vars pre_test post_test`
+- **`regression_example.csv`**: Relationship between hours studied and exam scores.
+  - *Usage*: `pasp regression examples/regression_example.csv --dep exam_score --indep hours_studied`
+
 ## License
 
 MIT
