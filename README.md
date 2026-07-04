@@ -22,7 +22,7 @@ PASP is a lightweight, local statistical analysis tool designed for the terminal
 ### Quick Installation
 
 ```bash
-pip install git+https://github.com/ppmena/PASP.git
+pip install git+https://github.com/ppmena/pasp
 ```
 
 ### Recommended Installation for Termux (Android)
@@ -30,7 +30,7 @@ pip install git+https://github.com/ppmena/PASP.git
 ```bash
 pkg update && pkg upgrade
 pkg install python clang make cmake pkg-config ninja meson
-pip install git+https://github.com/ppmena/PASP.git
+pip install git+https://github.com/ppmena/pasp
 ```
 
 ## Usage
@@ -59,10 +59,16 @@ pasp examples
 
 ## Example Datasets
 
+PASP includes several example datasets to help you get started:
+
 - **`ejemplo_anova.csv`**: Data for ANOVA.
 - **`ejemplo_ttest.csv`**: Data for T-tests.
+- **`ejemplo_ttest_one.csv`**: Data for one-sample tests.
+- **`ejemplo_ttest_paired.csv`**: Data for paired samples tests.
 - **`ejemplo_correlacion.csv`**: Data for correlation.
 - **`ejemplo_regresion.csv`**: Data for regression.
+
+You can view them by running `pasp examples`.
 
 ## License
 
