@@ -76,24 +76,51 @@ def display_dict_as_table(data_dict, title=None):
             print(f"{k}: {v}")
 
 def display_anova(results):
-    """Specialized display for ANOVA and Post-Hoc results."""
+    """Specialized display for ANOVA and Post-Hoc results with assumptions."""
     import pandas as pd
 
     global_df = pd.DataFrame([results['global']])
-    # Clean up global display
-    global_display = global_df[['Variable', 'Grouping', 'F', 'p']]
-    display_header("One-way ANOVA (Omnibus Test)")
-    display_table(global_display)
+    test_name = results['global']['Test']
+    display_header(f"{test_name} Result")
 
-    # Show more details for global ANOVA
-    details = global_df[['SS Between', 'df Between', 'MS Between', 'SS Error', 'df Error', 'MS Error']]
-    display_table(details, title="ANOVA Summary Statistics")
+    # Display global table
+    display_table(global_df)
+
+    # Display assumptions
+    assump = results['assumptions']
+    norm_status = "[green]Pass[/green]" if assump['Normality'] else "[red]Fail[/red]"
+    homog_status = "[green]Pass[/green]" if assump['Homogeneity'] else "[red]Fail[/red]"
+    display_info(f"\n[bold]Assumption Checks:[/bold]")
+    display_info(f"- Normality (Shapiro-Wilk): {norm_status}")
+    display_info(f"- Homogeneity (Levene): {homog_status} (p = {assump['p_homog']:.3f})")
 
     if results['post_hoc']:
         post_hoc_df = pd.DataFrame(results['post_hoc'])
         display_header("Post-Hoc Comparisons (Bonferroni)")
-        footer = "* Nota: El ajuste de Bonferroni multiplica el p-valor por el número de comparaciones. La d de Cohen utiliza la raíz del MS_error del modelo global."
+        footer = "* Nota: El ajuste de Bonferroni multiplica el p-valor por el número de comparaciones."
         display_table(post_hoc_df, footer=footer, highlight_col='p (bonf)', highlight_threshold=0.05)
+
+def display_ttest(results):
+    """Specialized display for T-Tests with assumption info."""
+    test_name = results['Test']
+    display_header(f"{test_name} Result")
+    display_dict_as_table(results)
+
+    display_info(f"\n[bold]Assumption Checks:[/bold]")
+    if 'Normality p' in results:
+        norm_status = "[green]Pass[/green]" if results['Normality p'] > 0.05 else "[red]Fail[/red]"
+        display_info(f"- Normality (Shapiro-Wilk): {norm_status} (p = {results['Normality p']:.3f})")
+    if 'Normality p (diff)' in results:
+        norm_status = "[green]Pass[/green]" if results['Normality p (diff)'] > 0.05 else "[red]Fail[/red]"
+        display_info(f"- Normality of differences (Shapiro-Wilk): {norm_status} (p = {results['Normality p (diff)']:.3f})")
+    if 'Normality p (G1)' in results:
+        norm1 = "[green]Pass[/green]" if results['Normality p (G1)'] > 0.05 else "[red]Fail[/red]"
+        norm2 = "[green]Pass[/green]" if results['Normality p (G2)'] > 0.05 else "[red]Fail[/red]"
+        display_info(f"- Normality G1: {norm1} (p = {results['Normality p (G1)']:.3f})")
+        display_info(f"- Normality G2: {norm2} (p = {results['Normality p (G2)']:.3f})")
+    if 'Homogeneity p' in results:
+        homog_status = "[green]Pass[/green]" if results['Homogeneity p'] > 0.05 else "[red]Fail[/red]"
+        display_info(f"- Homogeneity (Levene): {homog_status} (p = {results['Homogeneity p']:.3f})")
 
 def display_error(message):
     try:

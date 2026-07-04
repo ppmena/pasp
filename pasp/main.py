@@ -125,7 +125,6 @@ def main():
 
         if args.anova:
             results = stats.anova_oneway(df, args.anova[0], args.anova[1])
-            ui.display_header("One-way ANOVA Result")
             ui.display_anova(results)
 
         if args.correlation:
@@ -136,19 +135,16 @@ def main():
         if args.ttest_ind:
             try:
                 results = stats.ttest_independent(df, args.ttest_ind[0], args.ttest_ind[1])
-                ui.display_header("Independent Samples T-Test")
-                ui.display_dict_as_table(results)
+                ui.display_ttest(results)
             except ValueError as e: ui.display_error(str(e))
 
         if args.ttest_one:
             results = stats.ttest_one_sample(df, args.ttest_one[0], float(args.ttest_one[1]))
-            ui.display_header("One Sample T-Test")
-            ui.display_dict_as_table(results)
+            ui.display_ttest(results)
 
         if args.ttest_paired:
             results = stats.ttest_paired(df, args.ttest_paired[0], args.ttest_paired[1])
-            ui.display_header("Paired Samples T-Test")
-            ui.display_dict_as_table(results)
+            ui.display_ttest(results)
 
         if args.regression:
             try:
@@ -225,21 +221,17 @@ def main():
         ui.display_table(results, footer=footer)
     elif args.command == "ttest-one":
         results = stats.ttest_one_sample(df, args.var, args.value)
-        ui.display_header("One Sample T-Test")
-        ui.display_dict_as_table(results)
+        ui.display_ttest(results)
     elif args.command == "ttest-ind":
         try:
             results = stats.ttest_independent(df, args.var, args.group)
-            ui.display_header("Independent Samples T-Test")
-            ui.display_dict_as_table(results)
+            ui.display_ttest(results)
         except ValueError as e: ui.display_error(str(e))
     elif args.command == "ttest-paired":
         results = stats.ttest_paired(df, args.var1, args.var2)
-        ui.display_header("Paired Samples T-Test")
-        ui.display_dict_as_table(results)
+        ui.display_ttest(results)
     elif args.command == "anova":
         results = stats.anova_oneway(df, args.var, args.group)
-        ui.display_header("One-way ANOVA Result")
         ui.display_anova(results)
     elif args.command == "correlation":
         results = stats.correlation(df, args.vars)
