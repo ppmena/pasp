@@ -108,6 +108,11 @@ def main():
 
         if args.summary or args.auto:
             ui.display_header(f"Data Summary: {args.file}")
+            ui.display_info(f"[green]File loaded successfully.[/green]")
+            ui.display_info(f"Encoding detected: {df.attrs.get('encoding', 'unknown')}")
+            delim = df.attrs.get('delimiter', 'unknown')
+            if delim == '\t': delim = 'tabulator'
+            ui.display_info(f"Separator detected: {delim}")
             ui.display_info(f"Rows: {len(df)}, Columns: {len(df.columns)}")
             ui.display_info(f"Columns: {', '.join(df.columns)}")
 
