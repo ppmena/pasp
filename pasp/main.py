@@ -94,6 +94,7 @@ def main():
         parser.add_argument("--ttest-paired", nargs=2, metavar=('VAR1', 'VAR2'), help="Paired samples t-test")
         parser.add_argument("--regression", nargs=2, metavar=('DEP', 'INDEP'), help="Simple linear regression")
         parser.add_argument("--vars", nargs="+", help="Variables for descriptives")
+        parser.add_argument("--plot", action="store_true", help="Show visual plots (for ttest-ind)")
 
         args = parser.parse_args()
 
@@ -134,6 +135,15 @@ def main():
             try:
                 results = stats.ttest_independent(df, args.ttest_ind[0], args.ttest_ind[1])
                 ui.display_ttest(results)
+
+                if args.plot:
+                    from pasp import plots
+                    g_var = args.ttest_ind[1]
+                    v_var = args.ttest_ind[0]
+                    groups = df[g_var].unique()
+                    g1_data = df[df[g_var] == groups[0]][v_var]
+                    g2_data = df[df[g_var] == groups[1]][v_var]
+                    plots.render_comparative_histogram(g1_data, g2_data, str(groups[0]), str(groups[1]))
             except ValueError as e: ui.display_error(str(e))
 
         if args.ttest_one:
@@ -167,6 +177,7 @@ def main():
     tti_p.add_argument("file", help="Path to the data file")
     tti_p.add_argument("var", help="Dependent variable")
     tti_p.add_argument("group", help="Grouping variable")
+    tti_p.add_argument("--plot", action="store_true", help="Show visual plot")
 
     ttp_p = subparsers.add_parser("ttest-paired", help="Paired samples t-test")
     ttp_p.add_argument("file", help="Path to the data file")
@@ -223,6 +234,12 @@ def main():
         try:
             results = stats.ttest_independent(df, args.var, args.group)
             ui.display_ttest(results)
+            if args.plot:
+                from pasp import plots
+                groups = df[args.group].unique()
+                g1_data = df[df[args.group] == groups[0]][args.var]
+                g2_data = df[df[args.group] == groups[1]][args.var]
+                plots.render_comparative_histogram(g1_data, g2_data, str(groups[0]), str(groups[1]))
         except ValueError as e: ui.display_error(str(e))
     elif args.command == "ttest-paired":
         results = stats.ttest_paired(df, args.var1, args.var2)

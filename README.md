@@ -4,6 +4,7 @@ PASP is a lightweight, local statistical analysis tool designed for the terminal
 
 ## Features
 
+- **v0.3.3 Visual Insights**: Use the `--plot` flag with independent samples t-tests to see a comparative histogram in your terminal.
 - **v0.3.2 Non-parametric Depth**: Automatic **Dunn's Test** with Bonferroni correction for Kruskal-Wallis post-hoc analysis.
 - **v0.3.1 Fully in English**: All results and reports are displayed in English.
 - **v0.3 Intelligent Analysis**: Automatic verification of statistical assumptions (Normality, Homogeneity).
@@ -13,7 +14,7 @@ PASP is a lightweight, local statistical analysis tool designed for the terminal
 - **ANOVA**: One-way Analysis of Variance with automatic Post-Hoc comparisons (Bonferroni).
 - **Correlation**: Pearson correlation matrix.
 - **Linear Regression**: Simple linear regression.
-- **Beautiful Output**: Clean tables in your terminal using `rich` (with plain-text fallback).
+- **Beautiful Output**: Clean tables and plots in your terminal using `rich`.
 - **Lightweight & Lazy**: Fast startup; heavy dependencies are only loaded when needed.
 
 ## Installation
@@ -38,16 +39,14 @@ pip install git+https://github.com/ppmena/PASP.git
 
 ```bash
 pasp data.csv --auto
-pasp data.csv --anova score group
-pasp data.csv --ttest-ind score gender
+pasp data.csv --ttest-ind score gender --plot
 ```
 
 ### Style B: Subcommands
 
 ```bash
 pasp descriptives data.csv var1 var2
-pasp anova data.csv score group
-pasp ttest-ind data.csv score gender
+pasp ttest-ind data.csv score gender --plot
 ```
 
 ## Diagnostics and Help
