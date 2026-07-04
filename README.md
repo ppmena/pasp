@@ -4,6 +4,7 @@ PASP is a lightweight, local statistical analysis tool designed for the terminal
 
 ## Features
 
+- **v0.3.1 Fully in English**: All results and reports are now displayed in English.
 - **v0.3 Intelligent Analysis**: Automatic verification of statistical assumptions (Normality, Homogeneity).
 - **v0.3 Robust Tests**: Automatically applies corrections (Welch) or non-parametric alternatives (Mann-Whitney, Wilcoxon, Kruskal-Wallis) when assumptions fail.
 - **Descriptive Statistics**: Automatic variable classification (Nominal, Ordinal, Scale) with APA-style tables.

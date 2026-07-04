@@ -23,7 +23,6 @@ def display_table(df, title=None, footer=None, highlight_col=None, highlight_thr
         for _, row in df.iterrows():
             style = None
 
-            # Highlight significant p-values if requested
             if highlight_col and highlight_col in row:
                 try:
                     val = float(row[highlight_col])
@@ -32,7 +31,6 @@ def display_table(df, title=None, footer=None, highlight_col=None, highlight_thr
                 except (ValueError, TypeError):
                     pass
 
-            # Classification styles for Descriptives
             if not style and 'Type' in df.columns:
                 if row['Type'] == 'Nominal':
                     style = "cyan"
@@ -83,10 +81,8 @@ def display_anova(results):
     test_name = results['global']['Test']
     display_header(f"{test_name} Result")
 
-    # Display global table
     display_table(global_df)
 
-    # Display assumptions
     assump = results['assumptions']
     norm_status = "[green]Pass[/green]" if assump['Normality'] else "[red]Fail[/red]"
     homog_status = "[green]Pass[/green]" if assump['Homogeneity'] else "[red]Fail[/red]"
@@ -97,7 +93,7 @@ def display_anova(results):
     if results['post_hoc']:
         post_hoc_df = pd.DataFrame(results['post_hoc'])
         display_header("Post-Hoc Comparisons (Bonferroni)")
-        footer = "* Nota: El ajuste de Bonferroni multiplica el p-valor por el número de comparaciones."
+        footer = "* Note: Bonferroni adjustment multiplies the p-value by the number of comparisons. Effect size uses the model's residual variance."
         display_table(post_hoc_df, footer=footer, highlight_col='p (bonf)', highlight_threshold=0.05)
 
 def display_ttest(results):
@@ -121,6 +117,10 @@ def display_ttest(results):
     if 'Homogeneity p' in results:
         homog_status = "[green]Pass[/green]" if results['Homogeneity p'] > 0.05 else "[red]Fail[/red]"
         display_info(f"- Homogeneity (Levene): {homog_status} (p = {results['Homogeneity p']:.3f})")
+
+    # Add Wilcoxon p-value info if it was used or if normality failed
+    if "Wilcoxon" in test_name:
+        display_info(f"- Wilcoxon signed-rank p-value: {results['p']:.3f}")
 
 def display_error(message):
     try:

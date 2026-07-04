@@ -82,9 +82,7 @@ def main():
     parser = argparse.ArgumentParser(description="PASP: Portable Android Statistics Program", add_help=False)
     parser.add_argument("-h", "--help", action="store_true")
 
-    # Check if first argument is a file or a subcommand
     if len(sys.argv) > 1 and sys.argv[1] not in ["-h", "--help", "descriptives", "ttest-one", "ttest-ind", "ttest-paired", "anova", "correlation", "regression", "doctor", "install-help", "examples"]:
-        # Direct file usage
         parser.add_argument("file", help="Path to the data file")
         parser.add_argument("--auto", action="store_true", help="Run automatic analysis")
         parser.add_argument("--summary", action="store_true", help="Show data summary")
@@ -120,7 +118,7 @@ def main():
             vars_to_analyze = args.vars if args.vars else df.select_dtypes(include=['number', 'object', 'bool']).columns.tolist()
             results = stats.descriptives(df, vars_to_analyze)
             ui.display_header("Descriptive Statistics")
-            footer = "* Nota: Las variables marcadas con asterisco han sido identificadas como ordinales (discretas con max 4 valores). Sus estadísticos de centralización y dispersión deben interpretarse con cautela."
+            footer = "* Note: Variables marked with asterisk are identified as ordinal (discrete with max 4 values). Interpretation should be cautious."
             ui.display_table(results, footer=footer)
 
         if args.anova:
@@ -154,7 +152,6 @@ def main():
             except NotImplementedError as e: ui.display_error(str(e))
         return
 
-    # Subcommand usage
     subparsers = parser.add_subparsers(dest="command", help="Statistical command to run")
 
     desc_p = subparsers.add_parser("descriptives", help="Calculate descriptive statistics")
@@ -217,7 +214,7 @@ def main():
         vars_to_analyze = args.vars if args.vars else df.select_dtypes(include=['number', 'object', 'bool']).columns.tolist()
         results = stats.descriptives(df, vars_to_analyze)
         ui.display_header("Descriptive Statistics")
-        footer = "* Nota: Las variables marcadas con asterisco han sido identificadas como ordinales (discretas con max 4 valores). Sus estadísticos de centralización y dispersión deben interpretarse con cautela."
+        footer = "* Note: Variables marked with asterisk are identified as ordinal (discrete with max 4 values). Interpretation should be cautious."
         ui.display_table(results, footer=footer)
     elif args.command == "ttest-one":
         results = stats.ttest_one_sample(df, args.var, args.value)

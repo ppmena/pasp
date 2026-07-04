@@ -28,7 +28,7 @@ def check_normality(data):
     """Check for normality using Shapiro-Wilk test."""
     from scipy import stats
     if len(data) < 3:
-        return True, 1.0 # Not enough data to check, assume True
+        return True, 1.0
     stat, p = stats.shapiro(data)
     return p > 0.05, p
 
@@ -51,7 +51,6 @@ def descriptives(df, vars_list):
 
         var_type = classify_variable(series)
 
-        # Calculate mode separately as it applies to all types
         mode_val = data.mode()
         mode_str = str(mode_val.iloc[0]) if not mode_val.empty else "N/A"
 
@@ -80,15 +79,12 @@ def ttest_one_sample(df, var, test_value=0):
     if is_normal:
         test_name = "One-sample T-Test"
         t_stat, p_val = stats.ttest_1samp(data, test_value)
-        # Cohen's d
-        d = (np.mean(data) - test_value) / np.std(data, ddof=1)
+        es = (np.mean(data) - test_value) / np.std(data, ddof=1)
     else:
         test_name = "Wilcoxon Signed-Rank Test"
-        # Wilcoxon expects differences
         diff = data - test_value
         t_stat, p_val = stats.wilcoxon(diff)
-        # Rank-biserial correlation as effect size for Wilcoxon
-        d = t_stat / (len(data) * (len(data) + 1) / 2) # Approximation
+        es = t_stat / (len(data) * (len(data) + 1) / 2)
 
     return {
         'Test': test_name,
@@ -97,7 +93,7 @@ def ttest_one_sample(df, var, test_value=0):
         'Stat': t_stat,
         'df': len(data) - 1 if is_normal else "N/A",
         'p': p_val,
-        'Effect Size': d,
+        'Effect Size': es,
         'Normality p': p_norm
     }
 
@@ -124,12 +120,10 @@ def ttest_independent(df, var, group_var):
         else:
             test_name = "Welch's T-Test"
             t_stat, p_val = stats.ttest_ind(g1_data, g2_data, equal_var=False)
-            # Welch-Satterthwaite df calculation
             v1, v2 = np.var(g1_data, ddof=1), np.var(g2_data, ddof=1)
             n1, n2 = len(g1_data), len(g2_data)
             df_val = (v1/n1 + v2/n2)**2 / ((v1/n1)**2/(n1-1) + (v2/n2)**2/(n2-1))
 
-        # Calculate Cohen's d (pooled std dev)
         n1, n2 = len(g1_data), len(g2_data)
         v1, v2 = np.var(g1_data, ddof=1), np.var(g2_data, ddof=1)
         pooled_std = np.sqrt(((n1 - 1) * v1 + (n2 - 1) * v2) / (n1 + n2 - 2))
@@ -138,7 +132,6 @@ def ttest_independent(df, var, group_var):
         test_name = "Mann-Whitney U Test"
         t_stat, p_val = stats.mannwhitneyu(g1_data, g2_data)
         df_val = "N/A"
-        # Common language effect size
         es = t_stat / (len(g1_data) * len(g2_data))
 
     return {
@@ -173,7 +166,7 @@ def ttest_paired(df, var1, var2):
     else:
         test_name = "Wilcoxon Signed-Rank Test (Paired)"
         t_stat, p_val = stats.wilcoxon(g1_data, g2_data)
-        d = t_stat / (len(diff) * (len(diff) + 1) / 2) # Approximation
+        d = t_stat / (len(diff) * (len(diff) + 1) / 2)
 
     return {
         'Test': test_name,
@@ -192,7 +185,6 @@ def anova_oneway(df, var, group_var):
     import pandas as pd
     from itertools import combinations
 
-    # Clean data
     clean_df = df[[var, group_var]].dropna()
     groups = sorted(clean_df[group_var].unique())
     num_groups = len(groups)
@@ -200,10 +192,8 @@ def anova_oneway(df, var, group_var):
     if num_groups < 2:
         raise ValueError(f"ANOVA requires at least 2 groups. Found: {num_groups}")
 
-    # Prepare data groups
     data_groups = [clean_df[clean_df[group_var] == g][var] for g in groups]
 
-    # Assumption checks
     normality_results = [check_normality(g) for g in data_groups]
     all_normal = all(r[0] for r in normality_results)
     homog, p_homog = check_homogeneity(data_groups)
@@ -213,7 +203,6 @@ def anova_oneway(df, var, group_var):
             test_name = "One-way ANOVA"
             f_stat, p_val = stats.f_oneway(*data_groups)
 
-            # SS/MS calculations for Post-Hoc Cohen's d
             all_data = clean_df[var]
             grand_mean = all_data.mean()
             total_n = len(all_data)
@@ -226,7 +215,6 @@ def anova_oneway(df, var, group_var):
             ms_error = ss_error / df_error if df_error > 0 else 0
         else:
             test_name = "Welch's ANOVA"
-            # Welch's ANOVA calculation
             n = np.array([len(g) for g in data_groups])
             means = np.array([g.mean() for g in data_groups])
             vars = np.array([g.var(ddof=1) for g in data_groups])
@@ -243,8 +231,7 @@ def anova_oneway(df, var, group_var):
             df_error = 1 / (3 / (num_groups**2 - 1) * np.sum(lambdas))
             p_val = 1 - stats.f.cdf(f_stat, df_between, df_error)
 
-            # Approximation for ms_error for Cohen's d in post-hoc
-            ms_error = np.mean(vars) # Not exact for Welch but usable for d
+            ms_error = np.mean(vars)
 
         global_results = {
             'Test': test_name,
@@ -266,9 +253,8 @@ def anova_oneway(df, var, group_var):
             'df': num_groups - 1,
             'p': p_val
         }
-        ms_error = clean_df[var].var() # Fallback
+        ms_error = clean_df[var].var()
 
-    # Post-Hoc comparisons
     post_hoc_results = []
     if num_groups > 2:
         pairs = list(combinations(groups, 2))
@@ -278,33 +264,33 @@ def anova_oneway(df, var, group_var):
             d1 = clean_df[clean_df[group_var] == g1][var]
             d2 = clean_df[clean_df[group_var] == g2][var]
 
-            mean_diff = d1.mean() - d2.mean()
+            mean1 = d1.mean()
+            mean2 = d2.mean()
+            mean_diff = mean1 - mean2
             n1, n2 = len(d1), len(d2)
 
             if test_name == "Kruskal-Wallis H Test":
-                # Use Mann-Whitney U for non-parametric post-hoc
                 u_stat, p_raw = stats.mannwhitneyu(d1, d2)
-                t_val = "N/A"
-                se = "N/A"
-                d_cohen = u_stat / (n1 * n2) # Actually rank-biserial / common language
+                t_val = u_stat
+                es = u_stat / (n1 * n2)
             else:
-                # Use pooled se from the model
                 se = np.sqrt(ms_error * (1/n1 + 1/n2))
                 t_val = mean_diff / se if se > 0 else 0
                 df_post = len(clean_df) - num_groups
                 p_raw = 2 * (1 - stats.t.cdf(abs(t_val), df_post))
-                d_cohen = mean_diff / np.sqrt(ms_error) if ms_error > 0 else 0
+                es = mean_diff / np.sqrt(ms_error) if ms_error > 0 else 0
 
             p_bonf = min(1.0, p_raw * num_comparisons)
 
             post_hoc_results.append({
-                'Grupo 1': g1,
-                'Grupo 2': g2,
-                'Diferencia de Medias': mean_diff if isinstance(mean_diff, (int, float)) else "N/A",
-                'Error Típico': se,
-                't/U': t_val if test_name != "Kruskal-Wallis H Test" else u_stat,
+                'Group 1': g1,
+                'Group 2': g2,
+                'Mean 1': mean1,
+                'Mean 2': mean2,
+                'Mean Diff': mean_diff,
+                't/U': t_val,
                 'p (bonf)': p_bonf,
-                'Efecto': d_cohen
+                'Effect': es
             })
 
     return {
