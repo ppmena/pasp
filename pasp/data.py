@@ -80,12 +80,38 @@ def load_data(filepath):
     print(f"Error loading data: {last_error}")
     sys.exit(1)
 
+def resolve_variables(df, vars_list):
+    """
+    Translates a list of names or indices (as strings) into actual column names.
+    Supports input like: ['0', '3', 'age'] -> ['id', 'score', 'age']
+    """
+    if not vars_list:
+        return []
+
+    resolved = []
+    columns = df.columns.tolist()
+    num_cols = len(columns)
+
+    for v in vars_list:
+        if v in columns:
+            resolved.append(v)
+        else:
+            try:
+                idx = int(v)
+                if 0 <= idx < num_cols:
+                    resolved.append(columns[idx])
+                else:
+                    print(f"Error: Variable index {idx} out of range (0-{num_cols-1}).")
+                    sys.exit(1)
+            except ValueError:
+                print(f"Error: Variable '{v}' not found in dataset.")
+                sys.exit(1)
+
+    return resolved
+
 def get_variables(df, vars_list=None):
     """Return the specified variables or all numeric columns if none specified."""
     if vars_list:
-        missing = [v for v in vars_list if v not in df.columns]
-        if missing:
-            print(f"Error: Variables {missing} not found in data.")
-            sys.exit(1)
-        return df[vars_list]
+        resolved = resolve_variables(df, vars_list)
+        return df[resolved]
     return df.select_dtypes(include=['number'])

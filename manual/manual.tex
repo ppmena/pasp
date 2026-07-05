@@ -36,7 +36,7 @@
 
 \lstset{style=mystyle}
 
-\title{\textbf{PASP: Portable Android Statistics Program}\\ \Large User Manual -- Version 0.3.5}
+\title{\textbf{PASP: Portable Android Statistics Program}\\ \Large User Manual -- Version 0.4.0}
 \author{Jules (Engineering AI)}
 \date{\today}
 
@@ -92,6 +92,13 @@ pasp anova data.csv var group
 
 \section{Core Features}
 
+\subsection{Variable Indexing (New in v0.4.0)}
+Instead of typing full variable names, you can refer to them by their numerical index (starting from 0). Running \texttt{pasp [file] --summary} will show the index for each column.
+\textbf{Example:} If \texttt{score} is column 2 and \texttt{group} is column 1:
+\begin{lstlisting}[language=bash]
+pasp data.csv --ttest-ind 2 1
+\end{lstlisting}
+
 \subsection{Smart Data Loading}
 PASP automatically detects:
 \begin{itemize}
@@ -102,7 +109,7 @@ PASP automatically detects:
 \subsection{Intelligent Analysis}
 PASP automatically verifies statistical assumptions:
 \begin{itemize}
-    \item \textbf{Normality:} Shapiro-Wilk test.
+    \item \textbf{Normality:} Shapiro-Wilk test (on residuals for ANOVA).
     \item \textbf{Homogeneity:} Levene's test.
 \end{itemize}
 If assumptions are violated, it intelligently switches to \textbf{Welch's} corrections or \textbf{Non-parametric} alternatives (Mann-Whitney U, Wilcoxon, Kruskal-Wallis).
@@ -114,58 +121,23 @@ Classifies variables as Nominal, Ordinal, or Scale.
 \begin{itemize}
     \item \texttt{--descriptives}: Flag for Style A.
     \item \texttt{descriptives}: Subcommand for Style B.
-    \item \texttt{--vars}: Specify variables to analyze.
 \end{itemize}
-\textbf{Example:}
-\begin{lstlisting}[language=bash]
-pasp examples/ejemplo_anova.csv --descriptives --vars score age
-\end{lstlisting}
-
-\subsection{One-sample T-Test}
-Compares a sample mean against a test value. Uses \textbf{Wilcoxon} if normality fails.
-\begin{itemize}
-    \item \texttt{--ttest-one VAR VALUE}: Flag for Style A.
-    \item \texttt{ttest-one file VAR VALUE}: Subcommand for Style B.
-\end{itemize}
-\textbf{Example:}
-\begin{lstlisting}[language=bash]
-pasp examples/ejemplo_ttest_one.csv --ttest-one iq_score 100
-\end{lstlisting}
 
 \subsection{Independent Samples T-Test}
-Compares means between two independent groups. Fallbacks to \textbf{Welch} or \textbf{Mann-Whitney U}.
+Includes an optional comparative histogram.
 \begin{itemize}
-    \item \texttt{--ttest-ind VAR GROUP}: Flag for Style A.
-    \item \texttt{ttest-ind file VAR GROUP}: Subcommand for Style B.
-    \item \texttt{--plot}: Renders a comparative distribution histogram.
+    \item \texttt{--plot}: Enables visual distribution plot.
 \end{itemize}
 \textbf{Example:}
 \begin{lstlisting}[language=bash]
-pasp examples/ejemplo_ttest.csv --ttest-ind recovery_time treatment --plot
-\end{lstlisting}
-
-\subsection{Paired Samples T-Test}
-\textbf{Example:}
-\begin{lstlisting}[language=bash]
-pasp examples/ejemplo_ttest_paired.csv --ttest-paired pre_test post_test
+pasp examples/ejemplo_ttest.csv --ttest-ind 2 1 --plot
 \end{lstlisting}
 
 \subsection{One-Way ANOVA}
-Includes automatic Bonferroni Post-Hoc comparisons and \textbf{Dunn's test} for non-parametric cases (\textbf{Kruskal-Wallis}).
-\begin{itemize}
-    \item \texttt{--anova VAR GROUP}: Flag for Style A.
-    \item \texttt{anova file VAR GROUP}: Subcommand for Style B.
-\end{itemize}
+Includes automatic Bonferroni Post-Hoc comparisons and \textbf{Dunn's test} for non-parametric cases. Use \texttt{--plot} for group boxplots.
 \textbf{Example:}
 \begin{lstlisting}[language=bash]
-pasp anova examples/ejemplo_anova.csv score age
-\end{lstlisting}
-
-\subsection{Correlation and Regression}
-\textbf{Examples:}
-\begin{lstlisting}[language=bash]
-pasp correlation examples/ejemplo_correlacion.csv var1 var2 var3
-pasp regression examples/ejemplo_regresion.csv exam_score hours_studied
+pasp data.csv --anova 3 5 --plot
 \end{lstlisting}
 
 \section{Utility Commands}
@@ -173,7 +145,6 @@ pasp regression examples/ejemplo_regresion.csv exam_score hours_studied
     \item \texttt{pasp doctor}: Diagnostic report for the environment.
     \item \texttt{pasp examples}: Lists built-in datasets.
     \item \texttt{pasp install-help}: Displays detailed installation guides.
-    \item \texttt{pasp --auto [file]}: Quickly runs a summary and descriptives for all numeric data.
 \end{itemize}
 
 \section{License}

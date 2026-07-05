@@ -87,11 +87,11 @@ def main():
 Usage Examples:
   Style A (Direct File):
     pasp data.csv --auto                      Automatic summary and descriptives
-    pasp data.csv --anova score group --plot  One-way ANOVA with boxplots
-    pasp data.csv --ttest-ind score gender --plot   Independent T-Test with visual plot
+    pasp data.csv --anova 3 5 --plot         ANOVA using column indices (3rd and 5th columns)
+    pasp data.csv --ttest-ind score group    Independent T-Test using names
 
   Style B (Subcommands):
-    pasp descriptives data.csv age height    Descriptive statistics for specific variables
+    pasp descriptives data.csv 0 1 2         Descriptive statistics for first three columns
     pasp doctor                              Check environment and dependencies
     pasp update                              Upgrade PASP from GitHub
         """,
@@ -109,68 +109,96 @@ Usage Examples:
         parser.add_argument("--auto", action="store_true", help="Run automatic analysis")
         parser.add_argument("--summary", action="store_true", help="Display data summary")
         parser.add_argument("--descriptives", action="store_true", help="Run descriptive statistics")
-        parser.add_argument("--anova", nargs=2, metavar=('VAR', 'GROUP'), help="One-way ANOVA")
-        parser.add_argument("--correlation", nargs="+", metavar='VARS', help="Correlation matrix")
-        parser.add_argument("--ttest-ind", nargs=2, metavar=('VAR', 'GROUP'), help="Independent T-Test")
-        parser.add_argument("--ttest-one", nargs=2, metavar=('VAR', 'VALUE'), help="One-sample T-Test")
-        parser.add_argument("--ttest-paired", nargs=2, metavar=('VAR1', 'VAR2'), help="Paired T-Test")
-        parser.add_argument("--regression", nargs=2, metavar=('DEP', 'INDEP'), help="Linear regression")
-        parser.add_argument("--vars", nargs="+", help="Specific variables")
-        parser.add_argument("--plot", action="store_true", help="Show visual plots (for anova and ttest-ind)")
+        parser.add_argument("--anova", nargs=2, metavar=('VAR', 'GROUP'), help="One-way ANOVA (names or indices)")
+        parser.add_argument("--correlation", nargs="+", metavar='VARS', help="Correlation matrix (names or indices)")
+        parser.add_argument("--ttest-ind", nargs=2, metavar=('VAR', 'GROUP'), help="Independent T-Test (names or indices)")
+        parser.add_argument("--ttest-one", nargs=2, metavar=('VAR', 'VALUE'), help="One-sample T-Test (var as name or index)")
+        parser.add_argument("--ttest-paired", nargs=2, metavar=('VAR1', 'VAR2'), help="Paired T-Test (names or indices)")
+        parser.add_argument("--regression", nargs=2, metavar=('DEP', 'INDEP'), help="Linear regression (names or indices)")
+        parser.add_argument("--vars", nargs="+", help="Specific variables (names or indices)")
+        parser.add_argument("--plot", action="store_true", help="Show visual plots")
 
         args = parser.parse_args()
         if args.help: parser.print_help(); return
         from pasp import data, stats, ui
         df = data.load_data(args.file)
 
+        cols_with_idx = [f"[{i}] {c}" for i, c in enumerate(df.columns)]
+
         if args.summary or args.auto:
             ui.display_header(f"Data Summary: {args.file}")
             ui.display_info(f"[green]File loaded successfully.[/green]")
             ui.display_info(f"Encoding: {df.attrs.get('encoding', 'unknown')}, Separator: {df.attrs.get('delimiter', 'unknown')}")
             ui.display_info(f"Rows: {len(df)}, Columns: {len(df.columns)}")
-            ui.display_info(f"Variable list: {', '.join(df.columns.tolist())}")
+            ui.display_info(f"Variable list: {', '.join(cols_with_idx)}")
+
         if args.descriptives or args.auto:
-            vars_to_analyze = args.vars if args.vars else df.select_dtypes(include=['number', 'object', 'bool']).columns.tolist()
+            v_input = args.vars if args.vars else df.select_dtypes(include=['number', 'object', 'bool']).columns.tolist()
+            resolved_vars = data.resolve_variables(df, v_input)
             ui.display_header("Descriptive Statistics")
-            ui.display_info(f"Analyzing variables: {', '.join(vars_to_analyze)}")
-            ui.display_table(stats.descriptives(df, vars_to_analyze), footer="* Ordinal variables interpretation should be cautious.")
+            ui.display_info(f"Analyzing variables: {', '.join(resolved_vars)}")
+            ui.display_table(stats.descriptives(df, resolved_vars), footer="* Ordinal variables interpretation should be cautious.")
+
         if args.anova:
-            ui.display_anova(stats.anova_oneway(df, args.anova[0], args.anova[1]))
+            v = data.resolve_variables(df, args.anova)
+            ui.display_anova(stats.anova_oneway(df, v[0], v[1]))
             if args.plot:
-                from pasp import plots
-                plots.render_boxplots(df, args.anova[0], args.anova[1])
+                from pasp import plots; plots.render_boxplots(df, v[0], v[1])
+
         if args.correlation:
+            v = data.resolve_variables(df, args.correlation)
             ui.display_header("Correlation Matrix")
-            ui.display_table(stats.correlation(df, args.correlation))
+            ui.display_table(stats.correlation(df, v))
+
         if args.ttest_ind:
             try:
-                ui.display_ttest(stats.ttest_independent(df, args.ttest_ind[0], args.ttest_ind[1]))
+                v = data.resolve_variables(df, args.ttest_ind)
+                ui.display_ttest(stats.ttest_independent(df, v[0], v[1]))
                 if args.plot:
                     from pasp import plots
-                    gn = df[args.ttest_ind[1]].unique()[:2]
-                    plots.render_comparative_histogram(df[df[args.ttest_ind[1]]==gn[0]][args.ttest_ind[0]], df[df[args.ttest_ind[1]]==gn[1]][args.ttest_ind[0]], str(gn[0]), str(gn[1]))
+                    gn = df[v[1]].unique()[:2]
+                    plots.render_comparative_histogram(df[df[v[1]] == gn[0]][v[0]], df[df[v[1]] == gn[1]][v[0]], str(gn[0]), str(gn[1]))
             except Exception as e: ui.display_error(str(e))
-        if args.ttest_one: ui.display_ttest(stats.ttest_one_sample(df, args.ttest_one[0], float(args.ttest_one[1])))
-        if args.ttest_paired: ui.display_ttest(stats.ttest_paired(df, args.ttest_paired[0], args.ttest_paired[1]))
-        if args.regression: ui.display_dict_as_table(stats.linear_regression(df, args.regression[0], args.regression[1]), title="Linear Regression")
+
+        if args.ttest_one:
+            v = data.resolve_variables(df, [args.ttest_one[0]])
+            results = stats.ttest_one_sample(df, v[0], float(args.ttest_one[1]))
+            ui.display_ttest(results)
+
+        if args.ttest_paired:
+            v = data.resolve_variables(df, args.ttest_paired)
+            results = stats.ttest_paired(df, v[0], v[1])
+            ui.display_ttest(results)
+
+        if args.regression:
+            v = data.resolve_variables(df, args.regression)
+            results = stats.linear_regression(df, v[0], v[1])
+            ui.display_dict_as_table(results, title="Linear Regression")
         return
 
     subparsers = parser.add_subparsers(dest="command", help="Subcommands")
     desc_p = subparsers.add_parser("descriptives", help="Calculate descriptive statistics")
     desc_p.add_argument("file", help="Data file")
-    desc_p.add_argument("vars", nargs="*", help="Variables")
+    desc_p.add_argument("vars", nargs="*", help="Variables (names or indices)")
+
     tt1_p = subparsers.add_parser("ttest-one", help="One-sample T-test")
-    tt1_p.add_argument("file", help="Data file"); tt1_p.add_argument("var", help="Variable"); tt1_p.add_argument("value", type=float, help="Null value")
+    tt1_p.add_argument("file", help="Data file"); tt1_p.add_argument("var", help="Variable (name or index)"); tt1_p.add_argument("value", type=float, help="Null value")
+
     tti_p = subparsers.add_parser("ttest-ind", help="Independent T-test")
-    tti_p.add_argument("file", help="Data file"); tti_p.add_argument("var", help="Variable"); tti_p.add_argument("group", help="Grouping variable"); tti_p.add_argument("--plot", action="store_true", help="Visual plot")
+    tti_p.add_argument("file", help="Data file"); tti_p.add_argument("var", help="Variable"); tti_p.add_argument("group", help="Grouping"); tti_p.add_argument("--plot", action="store_true", help="Plot")
+
     ttp_p = subparsers.add_parser("ttest-paired", help="Paired T-test")
     ttp_p.add_argument("file", help="Data file"); ttp_p.add_argument("var1", help="Var 1"); ttp_p.add_argument("var2", help="Var 2")
+
     anova_p = subparsers.add_parser("anova", help="One-way ANOVA")
-    anova_p.add_argument("file", help="Data file"); anova_p.add_argument("var", help="Variable"); anova_p.add_argument("group", help="Grouping variable"); anova_p.add_argument("--plot", action="store_true", help="Visual boxplot")
+    anova_p.add_argument("file", help="Data file"); anova_p.add_argument("var", help="Variable"); anova_p.add_argument("group", help="Grouping"); anova_p.add_argument("--plot", action="store_true", help="Plot")
+
     corr_p = subparsers.add_parser("correlation", help="Pearson correlation")
     corr_p.add_argument("file", help="Data file"); corr_p.add_argument("vars", nargs="+", help="Variables")
+
     reg_p = subparsers.add_parser("regression", help="Linear regression")
     reg_p.add_argument("file", help="Data file"); reg_p.add_argument("dep", help="Dependent"); reg_p.add_argument("indep", help="Independent")
+
     subparsers.add_parser("doctor", help="Check system"); subparsers.add_parser("install-help", help="Installation guide"); subparsers.add_parser("examples", help="List examples"); subparsers.add_parser("update", help="Update from GitHub")
 
     args = parser.parse_args()
@@ -179,29 +207,38 @@ Usage Examples:
     if args.command == "install-help": install_help(); return
     if args.command == "examples": list_examples(); return
     if args.command == "update": update_pasp(); return
+
     from pasp import data, stats, ui
     df = data.load_data(args.file)
     if args.command == "descriptives":
-        v = args.vars if args.vars else df.select_dtypes(include=['number', 'object', 'bool']).columns.tolist()
-        ui.display_header("Descriptive Statistics")
-        ui.display_info(f"Analyzing variables: {', '.join(v)}")
+        v_in = args.vars if args.vars else df.select_dtypes(include=['number', 'object', 'bool']).columns.tolist()
+        v = data.resolve_variables(df, v_in)
+        ui.display_header("Descriptive Statistics"); ui.display_info(f"Analyzing variables: {', '.join(v)}")
         ui.display_table(stats.descriptives(df, v), footer="* Ordinal interpretation cautious.")
-    elif args.command == "ttest-one": ui.display_ttest(stats.ttest_one_sample(df, args.var, args.value))
+    elif args.command == "ttest-one":
+        v = data.resolve_variables(df, [args.var])
+        ui.display_ttest(stats.ttest_one_sample(df, v[0], args.value))
     elif args.command == "ttest-ind":
         try:
-            ui.display_ttest(stats.ttest_independent(df, args.var, args.group))
+            v = data.resolve_variables(df, [args.var, args.group])
+            ui.display_ttest(stats.ttest_independent(df, v[0], v[1]))
             if args.plot:
-                from pasp import plots; gn = df[args.group].unique()[:2]
-                plots.render_comparative_histogram(df[df[args.group]==gn[0]][args.var], df[df[args.group]==gn[1]][args.var], str(gn[0]), str(gn[1]))
+                from pasp import plots; gn = df[v[1]].unique()[:2]
+                plots.render_comparative_histogram(df[df[v[1]]==gn[0]][v[0]], df[df[v[1]]==gn[1]][v[0]], str(gn[0]), str(gn[1]))
         except Exception as e: ui.display_error(str(e))
-    elif args.command == "ttest-paired": ui.display_ttest(stats.ttest_paired(df, args.var1, args.var2))
+    elif args.command == "ttest-paired":
+        v = data.resolve_variables(df, [args.var1, args.var2])
+        ui.display_ttest(stats.ttest_paired(df, v[0], v[1]))
     elif args.command == "anova":
-        ui.display_anova(stats.anova_oneway(df, args.var, args.group))
-        if args.plot:
-            from pasp import plots; plots.render_boxplots(df, args.var, args.group)
+        v = data.resolve_variables(df, [args.var, args.group])
+        ui.display_anova(stats.anova_oneway(df, v[0], v[1]))
+        if args.plot: from pasp import plots; plots.render_boxplots(df, v[0], v[1])
     elif args.command == "correlation":
-        ui.display_header("Correlation Matrix"); ui.display_table(stats.correlation(df, args.vars))
-    elif args.command == "regression": ui.display_dict_as_table(stats.linear_regression(df, args.dep, args.indep), title="Linear Regression")
+        v = data.resolve_variables(df, args.vars)
+        ui.display_header("Correlation Matrix"); ui.display_table(stats.correlation(df, v))
+    elif args.command == "regression":
+        v = data.resolve_variables(df, [args.dep, args.indep])
+        ui.display_dict_as_table(stats.linear_regression(df, v[0], v[1]), title="Linear Regression")
 
 if __name__ == "__main__":
     main()

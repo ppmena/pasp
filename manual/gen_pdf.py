@@ -19,7 +19,7 @@ def generate_manual():
     pdf.set_font('Arial', 'B', 24)
     pdf.cell(0, 40, 'PASP User Manual', 0, 1, 'C')
     pdf.set_font('Arial', '', 14)
-    pdf.cell(0, 10, 'Version 0.3.5', 0, 1, 'C')
+    pdf.cell(0, 10, 'Version 0.4.0', 0, 1, 'C')
     pdf.ln(20)
 
     # Intro

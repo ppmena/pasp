@@ -4,15 +4,14 @@ PASP is a lightweight, local statistical analysis tool designed for the terminal
 
 ## Features
 
-- **v0.3.8 ANOVA Boxplots**: Use the `--plot` flag with ANOVA to see group-wise horizontal boxplots in your terminal.
-- **v0.3.7 Strict ANOVA Evaluation**: Detailed verification of residuals' normality, homogeneity of variances, and outlier detection with a final adequacy decision.
+- **v0.4.0 Variable Indexing**: Refer to variables by their index (e.g., `anova 2 4`) or their name.
+- **v0.3.8 ANOVA Boxplots**: Use the `--plot` flag with ANOVA to see group-wise horizontal boxplots.
+- **v0.3.7 Strict ANOVA Evaluation**: Detailed verification of residuals' normality, homogeneity of variances, and outlier detection.
 - **v0.3.5 Robust CLI**: Improved command-line interface supporting both direct file analysis and subcommands seamlessly.
 - **v0.3.4 Easy Updates**: Use the `update` command to stay on the latest version from GitHub.
 - **v0.3.3 Visual Insights**: Use the `--plot` flag with independent samples t-tests to see a comparative histogram.
-- **v0.3.2 Non-parametric Depth**: Automatic **Dunn's Test** with Bonferroni correction for Kruskal-Wallis post-hoc analysis.
-- **v0.3.1 Fully in English**: All results and reports are displayed in English.
 - **v0.3 Intelligent Analysis**: Automatic verification of statistical assumptions with robust (Welch) or non-parametric fallbacks.
-- **Beautiful Output**: Clean APA-style tables and plots in your terminal using `rich`.
+- **Beautiful Output**: Clean APA-style tables in your terminal using `rich`.
 
 ## Installation
 
@@ -38,7 +37,7 @@ pip install git+https://github.com/ppmena/pasp
 
 ## Usage
 
-PASP supports two styles of usage. For more details, run \texttt{pasp --help}.
+PASP supports two styles of usage. For more details, run `pasp --help`.
 
 ### Style A: Direct usage on a file
 
@@ -46,8 +45,8 @@ PASP supports two styles of usage. For more details, run \texttt{pasp --help}.
 # Automatic analysis
 pasp data.csv --auto
 
-# One-way ANOVA with boxplots
-pasp data.csv --anova score group --plot
+# One-way ANOVA using indices (e.g., column 3 as DV, column 5 as Group)
+pasp data.csv --anova 3 5 --plot
 
 # Independent T-Test with comparative histogram
 pasp data.csv --ttest-ind score gender --plot
@@ -56,7 +55,7 @@ pasp data.csv --ttest-ind score gender --plot
 ### Style B: Subcommands
 
 ```bash
-pasp anova data.csv score group --plot
+pasp anova data.csv 3 5 --plot
 ```
 
 ## Diagnostics and Help
