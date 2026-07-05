@@ -179,13 +179,13 @@ def ttest_paired(df, var1, var2):
     }
 
 def anova_oneway(df, var, group_var):
-    """Perform a one-way ANOVA, Welch's ANOVA, or Kruskal-Wallis test."""
+    """Perform a one-way ANOVA with strict assumption evaluation."""
     import numpy as np
     from scipy import stats
     import pandas as pd
     from itertools import combinations
 
-    clean_df = df[[var, group_var]].dropna()
+    clean_df = df[[var, group_var]].dropna().copy()
     groups = sorted(clean_df[group_var].unique())
     num_groups = len(groups)
 
@@ -194,11 +194,24 @@ def anova_oneway(df, var, group_var):
 
     data_groups = [clean_df[clean_df[group_var] == g][var] for g in groups]
 
-    normality_results = [check_normality(g) for g in data_groups]
-    all_normal = all(r[0] for r in normality_results)
+    # 1. Residuals Calculation
+    # Residual = value - group_mean
+    clean_df['mean'] = clean_df.groupby(group_var)[var].transform('mean')
+    clean_df['residual'] = clean_df[var] - clean_df['mean']
+
+    # 2. Shapiro-Wilk on residuals
+    is_normal, p_norm = check_normality(clean_df['residual'])
+
+    # 3. Levene's Test
     homog, p_homog = check_homogeneity(data_groups)
 
-    if all_normal:
+    # 4. Outliers (|Standardized Residual| > 3)
+    std_residual = clean_df['residual'] / clean_df['residual'].std()
+    outliers = clean_df[np.abs(std_residual) > 3]
+    has_outliers = not outliers.empty
+
+    # Global ANOVA Logic
+    if is_normal:
         if homog:
             test_name = "One-way ANOVA"
             f_stat, p_val = stats.f_oneway(*data_groups)
@@ -221,16 +234,13 @@ def anova_oneway(df, var, group_var):
             weights = n / vars
             sum_w = np.sum(weights)
             weighted_mean = np.sum(weights * means) / sum_w
-
             num = np.sum(weights * (means - weighted_mean)**2) / (num_groups - 1)
             lambdas = (1 - weights / sum_w)**2 / (n - 1)
             den = 1 + 2 * (num_groups - 2) / (num_groups**2 - 1) * np.sum(lambdas)
             f_stat = num / den
-
             df_between = num_groups - 1
             df_error = 1 / (3 / (num_groups**2 - 1) * np.sum(lambdas))
             p_val = 1 - stats.f.cdf(f_stat, df_between, df_error)
-
             ms_error = np.mean(vars)
 
         global_results = {
@@ -259,76 +269,51 @@ def anova_oneway(df, var, group_var):
     if num_groups > 2:
         pairs = list(combinations(groups, 2))
         num_comparisons = len(pairs)
-
         if test_name == "Kruskal-Wallis H Test":
-            # Dunn's test implementation
-            all_data = clean_df[var]
-            ranks = all_data.rank()
+            ranks = clean_df[var].rank()
             clean_df['rank'] = ranks
             mean_ranks = {g: clean_df[clean_df[group_var] == g]['rank'].mean() for g in groups}
             n_total = len(clean_df)
-
-            # Pooled variance for Dunn's test
-            # Standard error of difference in mean ranks: sqrt( [N(N+1)/12] * [1/ni + 1/nj] )
             pooled_var = n_total * (n_total + 1) / 12.0
-
             for g1, g2 in pairs:
-                d1 = clean_df[clean_df[group_var] == g1][var]
-                d2 = clean_df[clean_df[group_var] == g2][var]
+                d1, d2 = clean_df[clean_df[group_var] == g1][var], clean_df[clean_df[group_var] == g2][var]
                 n1, n2 = len(d1), len(d2)
-
                 rank_diff = mean_ranks[g1] - mean_ranks[g2]
                 se = np.sqrt(pooled_var * (1.0/n1 + 1.0/n2))
                 z_val = rank_diff / se
                 p_raw = 2 * (1 - stats.norm.cdf(abs(z_val)))
                 p_bonf = min(1.0, p_raw * num_comparisons)
-
                 post_hoc_results.append({
-                    'Group 1': g1,
-                    'Group 2': g2,
-                    'Mean 1': d1.mean(),
-                    'Mean 2': d2.mean(),
-                    'Mean Diff': d1.mean() - d2.mean(),
-                    'z': z_val,
-                    'p (bonf)': p_bonf,
-                    'Effect': z_val / np.sqrt(n_total) # r effect size approximation
+                    'Group 1': g1, 'Group 2': g2, 'Mean 1': d1.mean(), 'Mean 2': d2.mean(),
+                    'Mean Diff': d1.mean() - d2.mean(), 'z': z_val, 'p (bonf)': p_bonf, 'Effect': z_val / np.sqrt(n_total)
                 })
         else:
             for g1, g2 in pairs:
-                d1 = clean_df[clean_df[group_var] == g1][var]
-                d2 = clean_df[clean_df[group_var] == g2][var]
-
-                mean1 = d1.mean()
-                mean2 = d2.mean()
+                d1, d2 = clean_df[clean_df[group_var] == g1][var], clean_df[clean_df[group_var] == g2][var]
+                mean1, mean2 = d1.mean(), d2.mean()
                 mean_diff = mean1 - mean2
                 n1, n2 = len(d1), len(d2)
-
                 se = np.sqrt(ms_error * (1/n1 + 1/n2))
                 t_val = mean_diff / se if se > 0 else 0
                 df_post = len(clean_df) - num_groups
                 p_raw = 2 * (1 - stats.t.cdf(abs(t_val), df_post))
                 es = mean_diff / np.sqrt(ms_error) if ms_error > 0 else 0
-
                 p_bonf = min(1.0, p_raw * num_comparisons)
-
                 post_hoc_results.append({
-                    'Group 1': g1,
-                    'Group 2': g2,
-                    'Mean 1': mean1,
-                    'Mean 2': mean2,
-                    'Mean Diff': mean_diff,
-                    't': t_val,
-                    'p (bonf)': p_bonf,
-                    'Effect': es
+                    'Group 1': g1, 'Group 2': g2, 'Mean 1': mean1, 'Mean 2': mean2,
+                    'Mean Diff': mean_diff, 't': t_val, 'p (bonf)': p_bonf, 'Effect': es
                 })
 
     return {
         'global': global_results,
         'post_hoc': post_hoc_results,
         'assumptions': {
-            'Normality': all_normal,
+            'Normality': is_normal,
+            'p_norm': p_norm,
             'Homogeneity': homog,
-            'p_homog': p_homog
+            'p_homog': p_homog,
+            'Outliers': has_outliers,
+            'num_outliers': len(outliers)
         }
     }
 

@@ -74,7 +74,7 @@ def display_dict_as_table(data_dict, title=None):
             print(f"{k}: {v}")
 
 def display_anova(results):
-    """Specialized display for ANOVA and Post-Hoc results with assumptions."""
+    """Specialized display for ANOVA and Post-Hoc results with strict assumptions."""
     import pandas as pd
 
     global_df = pd.DataFrame([results['global']])
@@ -83,12 +83,38 @@ def display_anova(results):
 
     display_table(global_df)
 
+    # Strict Assumptions Table
     assump = results['assumptions']
-    norm_status = "[green]Pass[/green]" if assump['Normality'] else "[red]Fail[/red]"
-    homog_status = "[green]Pass[/green]" if assump['Homogeneity'] else "[red]Fail[/red]"
-    display_info(f"\n[bold]Assumption Checks:[/bold]")
-    display_info(f"- Normality (Shapiro-Wilk): {norm_status}")
-    display_info(f"- Homogeneity (Levene): {homog_status} (p = {assump['p_homog']:.3f})")
+
+    strict_data = [
+        {
+            'Assumption': 'Normality',
+            'Test or criteria': 'Shapiro-Wilk on residuals',
+            'p-value / result': f"{assump['p_norm']:.3f}",
+            'Decision': 'Assumption met' if assump['Normality'] else 'Assumption not met'
+        },
+        {
+            'Assumption': 'Homogeneity of variances',
+            'Test or criteria': 'Levene',
+            'p-value / result': f"{assump['p_homog']:.3f}",
+            'Decision': 'Assumption met' if assump['Homogeneity'] else 'Assumption not met'
+        },
+        {
+            'Assumption': 'Outliers',
+            'Test or criteria': '|std. residual| > 3',
+            'p-value / result': f"{assump['num_outliers']} cases",
+            'Decision': 'No relevant outliers detected' if not assump['Outliers'] else 'Relevant outliers detected'
+        }
+    ]
+
+    display_header("Strict Assumption Evaluation")
+    display_table(pd.DataFrame(strict_data))
+
+    # Final Decision Sentence
+    if assump['Normality'] and assump['Homogeneity'] and not assump['Outliers']:
+        display_info("\n[bold green]One-way ANOVA is adequate.[/bold green]")
+    else:
+        display_info("\n[bold red]One-way ANOVA is not adequate.[/bold red]")
 
     if results['post_hoc']:
         post_hoc_df = pd.DataFrame(results['post_hoc'])
@@ -140,7 +166,7 @@ def display_info(message):
         console = Console()
         console.print(message)
     except ImportError:
-        m = message.replace("[bold]", "").replace("[/bold]", "")
+        m = str(message).replace("[bold]", "").replace("[/bold]", "")
         m = m.replace("[green]", "").replace("[/green]", "")
         m = m.replace("[red]", "").replace("[/red]", "")
         m = m.replace("[blue]", "").replace("[/blue]", "")

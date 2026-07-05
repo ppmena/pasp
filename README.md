@@ -4,12 +4,13 @@ PASP is a lightweight, local statistical analysis tool designed for the terminal
 
 ## Features
 
-- **v0.3.5 Robust CLI**: Improved command-line interface that supports both direct file analysis and subcommands seamlessly.
+- **v0.3.7 Strict ANOVA Evaluation**: Detailed verification of residuals' normality, homogeneity of variances, and outlier detection with a final adequacy decision.
+- **v0.3.5 Robust CLI**: Improved command-line interface supporting both direct file analysis and subcommands seamlessly.
 - **v0.3.4 Easy Updates**: Use the `update` command to stay on the latest version from GitHub.
 - **v0.3.3 Visual Insights**: Use the `--plot` flag with independent samples t-tests to see a comparative histogram.
 - **v0.3.2 Non-parametric Depth**: Automatic **Dunn's Test** with Bonferroni correction for Kruskal-Wallis post-hoc analysis.
 - **v0.3.1 Fully in English**: All results and reports are displayed in English.
-- **v0.3 Intelligent Analysis**: Automatic verification of statistical assumptions (Normality, Homogeneity) with robust (Welch) or non-parametric fallbacks.
+- **v0.3 Intelligent Analysis**: Automatic verification of statistical assumptions with robust (Welch) or non-parametric fallbacks.
 - **Beautiful Output**: Clean APA-style tables in your terminal using `rich`.
 
 ## Installation
@@ -44,14 +45,13 @@ PASP supports two styles of usage. For more details, run `pasp --help`.
 # Automatic analysis
 pasp data.csv --auto
 
-# Independent T-Test with plot
-pasp data.csv --ttest-ind score group --plot
+# One-way ANOVA with strict assumptions
+pasp data.csv --anova score group
 ```
 
 ### Style B: Subcommands
 
 ```bash
-pasp descriptives data.csv
 pasp anova data.csv score group
 ```
 
