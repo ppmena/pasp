@@ -79,11 +79,13 @@ def ttest_one_sample(df, var, test_value=0):
     if is_normal:
         test_name = "One-sample T-Test"
         t_stat, p_val = stats.ttest_1samp(data, test_value)
+        es_label = "Cohen's d (d)"
         es = (np.mean(data) - test_value) / np.std(data, ddof=1)
     else:
         test_name = "Wilcoxon Signed-Rank Test"
         diff = data - test_value
         t_stat, p_val = stats.wilcoxon(diff)
+        es_label = "Rank-biserial (r)"
         es = t_stat / (len(data) * (len(data) + 1) / 2)
 
     return {
@@ -93,7 +95,7 @@ def ttest_one_sample(df, var, test_value=0):
         'Stat': t_stat,
         'df': len(data) - 1 if is_normal else "N/A",
         'p': p_val,
-        'Effect Size': es,
+        es_label: es,
         'Normality p': p_norm
     }
 
@@ -127,12 +129,14 @@ def ttest_independent(df, var, group_var):
         n1, n2 = len(g1_data), len(g2_data)
         v1, v2 = np.var(g1_data, ddof=1), np.var(g2_data, ddof=1)
         pooled_std = np.sqrt(((n1 - 1) * v1 + (n2 - 1) * v2) / (n1 + n2 - 2))
+        es_label = "Cohen's d (d)"
         es = (np.mean(g1_data) - np.mean(g2_data)) / pooled_std
     else:
         test_name = "Mann-Whitney U Test"
         t_stat, p_val = stats.mannwhitneyu(g1_data, g2_data)
         df_val = "N/A"
-        es = t_stat / (len(g1_data) * len(g2_data))
+        es_label = "Rank-biserial (r)"
+        es = 1 - (2 * t_stat) / (len(g1_data) * len(g2_data))
 
     return {
         'Test': test_name,
@@ -142,7 +146,7 @@ def ttest_independent(df, var, group_var):
         'Stat': t_stat,
         'df': df_val,
         'p': p_val,
-        'Effect Size': es,
+        es_label: es,
         'Normality p (G1)': p_norm1,
         'Normality p (G2)': p_norm2,
         'Homogeneity p': p_homog
@@ -162,11 +166,13 @@ def ttest_paired(df, var1, var2):
     if is_normal:
         test_name = "Paired Samples T-Test"
         t_stat, p_val = stats.ttest_rel(g1_data, g2_data)
-        d = np.mean(diff) / np.std(diff, ddof=1)
+        es_label = "Cohen's d (d)"
+        es = np.mean(diff) / np.std(diff, ddof=1)
     else:
         test_name = "Wilcoxon Signed-Rank Test (Paired)"
         t_stat, p_val = stats.wilcoxon(g1_data, g2_data)
-        d = t_stat / (len(diff) * (len(diff) + 1) / 2)
+        es_label = "Rank-biserial (r)"
+        es = t_stat / (len(diff) * (len(diff) + 1) / 2)
 
     return {
         'Test': test_name,
@@ -174,7 +180,7 @@ def ttest_paired(df, var1, var2):
         'Stat': t_stat,
         'df': len(temp_df) - 1 if is_normal else "N/A",
         'p': p_val,
-        'Effect Size': d,
+        es_label: es,
         'Normality p (diff)': p_norm
     }
 
@@ -194,28 +200,18 @@ def anova_oneway(df, var, group_var):
 
     data_groups = [clean_df[clean_df[group_var] == g][var] for g in groups]
 
-    # 1. Residuals Calculation
-    # Residual = value - group_mean
     clean_df['mean'] = clean_df.groupby(group_var)[var].transform('mean')
     clean_df['residual'] = clean_df[var] - clean_df['mean']
-
-    # 2. Shapiro-Wilk on residuals
     is_normal, p_norm = check_normality(clean_df['residual'])
-
-    # 3. Levene's Test
     homog, p_homog = check_homogeneity(data_groups)
-
-    # 4. Outliers (|Standardized Residual| > 3)
     std_residual = clean_df['residual'] / clean_df['residual'].std()
     outliers = clean_df[np.abs(std_residual) > 3]
     has_outliers = not outliers.empty
 
-    # Global ANOVA Logic
     if is_normal:
         if homog:
             test_name = "One-way ANOVA"
             f_stat, p_val = stats.f_oneway(*data_groups)
-
             all_data = clean_df[var]
             grand_mean = all_data.mean()
             total_n = len(all_data)
@@ -285,7 +281,7 @@ def anova_oneway(df, var, group_var):
                 p_bonf = min(1.0, p_raw * num_comparisons)
                 post_hoc_results.append({
                     'Group 1': g1, 'Group 2': g2, 'Mean 1': d1.mean(), 'Mean 2': d2.mean(),
-                    'Mean Diff': d1.mean() - d2.mean(), 'z': z_val, 'p (bonf)': p_bonf, 'Effect': z_val / np.sqrt(n_total)
+                    'Mean Diff': d1.mean() - d2.mean(), 'z': z_val, 'p (bonf)': p_bonf, "Rank-based (r)": z_val / np.sqrt(n_total)
                 })
         else:
             for g1, g2 in pairs:
@@ -301,7 +297,7 @@ def anova_oneway(df, var, group_var):
                 p_bonf = min(1.0, p_raw * num_comparisons)
                 post_hoc_results.append({
                     'Group 1': g1, 'Group 2': g2, 'Mean 1': mean1, 'Mean 2': mean2,
-                    'Mean Diff': mean_diff, 't': t_val, 'p (bonf)': p_bonf, 'Effect': es
+                    'Mean Diff': mean_diff, 't': t_val, 'p (bonf)': p_bonf, "Cohen's d (d)": es
                 })
 
     return {

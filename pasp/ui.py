@@ -83,7 +83,6 @@ def display_anova(results):
 
     display_table(global_df)
 
-    # Strict Assumptions Table
     assump = results['assumptions']
 
     strict_data = [
@@ -110,7 +109,6 @@ def display_anova(results):
     display_header("Strict Assumption Evaluation")
     display_table(pd.DataFrame(strict_data))
 
-    # Final Decision Sentence
     if assump['Normality'] and assump['Homogeneity'] and not assump['Outliers']:
         display_info("\n[bold green]One-way ANOVA is adequate.[/bold green]")
     else:
@@ -124,7 +122,7 @@ def display_anova(results):
             ph_title = "Post-Hoc Comparisons (Bonferroni)"
 
         display_header(ph_title)
-        footer = "* Note: Bonferroni adjustment multiplies the p-value by the number of comparisons. Effect size uses the model's residual variance or rank-based r."
+        footer = "* Note: Bonferroni adjustment multiplies the p-value by the number of comparisons. Effect size (d) uses the model's residual variance."
         display_table(post_hoc_df, footer=footer, highlight_col='p (bonf)', highlight_threshold=0.05)
 
 def display_ttest(results):
