@@ -36,7 +36,7 @@
 
 \lstset{style=mystyle}
 
-\title{\textbf{PASP: Portable Android Statistics Program}\\ \Large User Manual -- Version 0.4.2}
+\title{\textbf{PASP: Portable Android Statistics Program}\\ \Large User Manual -- Version 0.4.3}
 \author{Jules (Engineering AI)}
 \date{\today}
 
@@ -114,11 +114,13 @@ PASP automatically verifies statistical assumptions:
 \end{itemize}
 If assumptions are violated, it intelligently switches to \textbf{Welch's} corrections or \textbf{Non-parametric} alternatives (Mann-Whitney U, Wilcoxon, Kruskal-Wallis, Spearman).
 
-\subsection{Correlation and Regression (New in v0.4.2)}
+\subsection{Correlation and Regression (New in v0.4.3)}
 PASP now performs automatic \textbf{bivariate normality} checks.
 \begin{itemize}
     \item If normality is met: Uses \textbf{Pearson} correlation and \textbf{Linear Regression (OLS)}.
     \item If normality is violated: Automatically falls back to \textbf{Spearman} correlation.
+    \item \textbf{Preliminary Analysis:} Displays Mean, SD, Normality (p), Skewness, and Kurtosis for analyzed variables.
+    \item \textbf{Visualizations:} Supports terminal scatter plots with regression lines using the \texttt{--plot} flag.
     \item Output format: Uses a clear text-based pairwise format optimized for narrow terminal screens.
 \end{itemize}
 

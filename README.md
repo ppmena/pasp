@@ -4,7 +4,8 @@ PASP is a lightweight, local statistical analysis tool designed for the terminal
 
 ## Features
 
-- **v0.4.2 Smart Correlation/Regression**: Automatic bivariate normality checks with Spearman fallback and optimized text output.
+- **v0.4.3 Advanced Regression**: Preliminary descriptives (Mean, SD, Skewness, Kurtosis) and terminal scatter plots for regression.
+- **v0.4.2 Smart Correlation**: Automatic bivariate normality checks with Spearman fallback and optimized text output.
 - **v0.4.1 UI Polish**: Fixed p-value formatting for numeric group labels and enhanced descriptive tables.
 - **v0.4.0 Variable Indexing**: Refer to variables by their index (e.g., `anova 2 4`) or their name.
 - **v0.3.8 ANOVA Boxplots**: Use the `--plot` flag with ANOVA to see group-wise horizontal boxplots.

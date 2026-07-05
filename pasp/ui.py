@@ -216,3 +216,25 @@ def display_pairwise_results(results, title="Pairwise Analysis"):
 
         if res.get('Message'):
             display_info(f"[yellow]{res['Message']}[/yellow]")
+
+def display_regression(res):
+    """Specialized display for regression results with pre-analysis descriptives."""
+    import pandas as pd
+    display_header("Regression: Preliminary Analysis")
+
+    desc_data = []
+    if 'Descriptives' in res:
+        for var, stats in res['Descriptives'].items():
+            role = "Dependent" if var == res.get('Dependent') else "Independent"
+            desc_data.append({
+                'Variable': var,
+                'Role': role,
+                'Mean': stats['Mean'],
+                'SD': stats['SD'],
+                'Normality (p)': stats['Normality-p'],
+                'Skewness': stats['Skewness'],
+                'Kurtosis': stats['Kurtosis']
+            })
+        display_table(pd.DataFrame(desc_data))
+
+    display_pairwise_results(res, title="Regression: Model Results")

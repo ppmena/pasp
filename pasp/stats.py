@@ -365,6 +365,7 @@ def correlation(df, vars_list):
 
 def linear_regression(df, dep_var, indep_vars):
     """Perform a linear regression or fallback to Spearman correlation if assumptions fail."""
+    import numpy as np
     from scipy import stats
     if isinstance(indep_vars, str):
         indep_vars = [indep_vars]
@@ -378,6 +379,22 @@ def linear_regression(df, dep_var, indep_vars):
         x = temp_df[indep_vars[0]]
 
         is_normal, p1, p2 = check_bivariate_normality(y, x)
+
+        # Calculate descriptives for both
+        def get_stats(data):
+            _, p_norm = check_normality(data)
+            return {
+                'Mean': np.mean(data),
+                'SD': np.std(data, ddof=1),
+                'Normality-p': p_norm,
+                'Skewness': stats.skew(data),
+                'Kurtosis': stats.kurtosis(data)
+            }
+
+        desc = {
+            dep_var: get_stats(y),
+            indep_vars[0]: get_stats(x)
+        }
 
         if is_normal:
             slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
@@ -395,7 +412,8 @@ def linear_regression(df, dep_var, indep_vars):
                 'Normality': True,
                 'p_dep': p1,
                 'p_indep': p2,
-                'N': len(temp_df)
+                'N': len(temp_df),
+                'Descriptives': desc
             }
         else:
             # Fallback to Spearman
@@ -411,7 +429,8 @@ def linear_regression(df, dep_var, indep_vars):
                 'p_dep': p1,
                 'p_indep': p2,
                 'N': len(temp_df),
-                'Message': "Bivariate normality violated. Falling back to non-parametric correlation."
+                'Message': "Bivariate normality violated. Falling back to non-parametric correlation.",
+                'Descriptives': desc
             }
     else:
         raise NotImplementedError("Multiple regression not yet implemented.")

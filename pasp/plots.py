@@ -113,3 +113,60 @@ def render_boxplots(df, var, group_var):
     console.print(footer)
     labels = Text(" " * 13 + f"{all_min:.1f}".ljust(width // 2) + f"{all_max:.1f}".rjust(width // 2 + (width % 2)))
     console.print(labels)
+
+def render_regression_plot(df, x_var, y_var, slope, intercept):
+    """
+    Renders a scatter plot with regression line in the terminal.
+    """
+    from rich.console import Console
+    from rich.text import Text
+    from rich.panel import Panel
+
+    console = Console()
+    temp_df = df[[x_var, y_var]].dropna()
+    x = temp_df[x_var].values
+    y = temp_df[y_var].values
+
+    if len(x) == 0: return
+
+    WIDTH = 50
+    HEIGHT = 15
+
+    x_min, x_max = np.min(x), np.max(x)
+    y_min, y_max = np.min(y), np.max(y)
+
+    # Padding
+    x_range = x_max - x_min if x_max != x_min else 1
+    y_range = y_max - y_min if y_max != y_min else 1
+    x_min -= 0.1 * x_range
+    x_max += 0.1 * x_range
+    y_min -= 0.1 * y_range
+    y_max += 0.1 * y_range
+
+    grid = [[" " for _ in range(WIDTH)] for _ in range(HEIGHT)]
+
+    # Plot points
+    for i in range(len(x)):
+        px = int((x[i] - x_min) / (x_max - x_min) * (WIDTH - 1))
+        py = int((y[i] - y_min) / (y_max - y_min) * (HEIGHT - 1))
+        if 0 <= px < WIDTH and 0 <= py < HEIGHT:
+            grid[HEIGHT - 1 - py][px] = "•"
+
+    # Plot regression line
+    line_x = np.linspace(x_min, x_max, WIDTH)
+    line_y = slope * line_x + intercept
+    for i in range(WIDTH):
+        val_y = line_y[i]
+        if y_min <= val_y <= y_max:
+            py = int((val_y - y_min) / (y_max - y_min) * (HEIGHT - 1))
+            if 0 <= py < HEIGHT:
+                if grid[HEIGHT - 1 - py][i] == "•":
+                    grid[HEIGHT - 1 - py][i] = "✳" # Intersection
+                else:
+                    grid[HEIGHT - 1 - py][i] = "·"
+
+    console.print(Panel(f"Regression Plot: [bold]{y_var}[/bold] ~ [bold]{x_var}[/bold]", expand=False))
+    for row in grid:
+        console.print("│" + "".join(row))
+    console.print("└" + "─" * WIDTH)
+    console.print(f"{x_min:.1f}".ljust(WIDTH // 2) + f"{x_max:.1f}".rjust(WIDTH // 2 + (WIDTH % 2)))

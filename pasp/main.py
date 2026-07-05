@@ -173,7 +173,10 @@ Usage Examples:
         if args.regression:
             v = data.resolve_variables(df, args.regression)
             results = stats.linear_regression(df, v[0], v[1])
-            ui.display_pairwise_results(results, title="Regression Analysis")
+            ui.display_regression(results)
+            if args.plot and results.get('Type') == 'Regression':
+                from pasp import plots
+                plots.render_regression_plot(df, v[1], v[0], results['Slope'], results['Intercept'])
         return
 
     subparsers = parser.add_subparsers(dest="command", help="Subcommands")
@@ -197,7 +200,7 @@ Usage Examples:
     corr_p.add_argument("file", help="Data file"); corr_p.add_argument("vars", nargs="+", help="Variables")
 
     reg_p = subparsers.add_parser("regression", help="Linear regression")
-    reg_p.add_argument("file", help="Data file"); reg_p.add_argument("dep", help="Dependent"); reg_p.add_argument("indep", help="Independent")
+    reg_p.add_argument("file", help="Data file"); reg_p.add_argument("dep", help="Dependent"); reg_p.add_argument("indep", help="Independent"); reg_p.add_argument("--plot", action="store_true", help="Plot")
 
     subparsers.add_parser("doctor", help="Check system"); subparsers.add_parser("install-help", help="Installation guide"); subparsers.add_parser("examples", help="List examples"); subparsers.add_parser("update", help="Update from GitHub")
 
@@ -240,7 +243,10 @@ Usage Examples:
     elif args.command == "regression":
         v = data.resolve_variables(df, [args.dep, args.indep])
         results = stats.linear_regression(df, v[0], v[1])
-        ui.display_pairwise_results(results, title="Regression Analysis")
+        ui.display_regression(results)
+        if args.plot and results.get('Type') == 'Regression':
+            from pasp import plots
+            plots.render_regression_plot(df, v[1], v[0], results['Slope'], results['Intercept'])
 
 if __name__ == "__main__":
     main()
