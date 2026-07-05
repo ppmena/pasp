@@ -41,7 +41,11 @@ def display_table(df, title=None, footer=None, highlight_col=None, highlight_thr
             for col in df.columns:
                 val = row[col]
                 if isinstance(val, float):
-                    if "p" in str(col).lower() and val < 0.001:
+                    col_lower = str(col).lower()
+                    # Only format as p-value if column name starts with 'p ' or 'p-' or is exactly 'p'
+                    is_p_col = col_lower == 'p' or col_lower.startswith('p ') or col_lower.startswith('p-') or 'p-value' in col_lower
+
+                    if is_p_col and val < 0.001:
                         formatted_row.append("< .001")
                     else:
                         formatted_row.append(f"{val:.3f}")

@@ -43,6 +43,10 @@ def descriptives(df, vars_list):
     import numpy as np
     import pandas as pd
     results = []
+
+    # Map column names to their indices
+    col_to_idx = {col: i for i, col in enumerate(df.columns)}
+
     for var in vars_list:
         series = df[var]
         data = series.dropna()
@@ -55,6 +59,7 @@ def descriptives(df, vars_list):
         mode_str = str(mode_val.iloc[0]) if not mode_val.empty else "N/A"
 
         desc = {
+            'Index': f"[{col_to_idx.get(var, '?')}]",
             'Variable': f"{var}*" if var_type == "Ordinal" else var,
             'Type': var_type,
             'N': len(data),
