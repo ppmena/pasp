@@ -162,11 +162,13 @@ Usage Examples:
             ui.display_info(f"[green]File loaded successfully.[/green]")
             ui.display_info(f"Encoding: {df.attrs.get('encoding', 'unknown')}, Separator: {df.attrs.get('delimiter', 'unknown')}")
             ui.display_info(f"Rows: {len(df)}, Columns: {len(df.columns)}")
+            ui.display_info(f"Variable list: {', '.join(df.columns.tolist())}")
 
         if args.descriptives or args.auto:
             vars_to_analyze = args.vars if args.vars else df.select_dtypes(include=['number', 'object', 'bool']).columns.tolist()
-            results = stats.descriptives(df, vars_to_analyze)
             ui.display_header("Descriptive Statistics")
+            ui.display_info(f"Analyzing variables: {', '.join(vars_to_analyze)}")
+            results = stats.descriptives(df, vars_to_analyze)
             ui.display_table(results, footer="* Ordinal variables interpretation should be cautious.")
 
         if args.anova:
@@ -262,6 +264,7 @@ Usage Examples:
     if args.command == "descriptives":
         v = args.vars if args.vars else df.select_dtypes(include=['number', 'object', 'bool']).columns.tolist()
         ui.display_header("Descriptive Statistics")
+        ui.display_info(f"Analyzing variables: {', '.join(v)}")
         ui.display_table(stats.descriptives(df, v), footer="* Ordinal interpretation cautious.")
     elif args.command == "ttest-one":
         ui.display_ttest(stats.ttest_one_sample(df, args.var, args.value))
