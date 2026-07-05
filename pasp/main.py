@@ -147,8 +147,8 @@ Usage Examples:
 
         if args.correlation:
             v = data.resolve_variables(df, args.correlation)
-            ui.display_header("Correlation Matrix")
-            ui.display_table(stats.correlation(df, v))
+            results = stats.correlation(df, v)
+            ui.display_pairwise_results(results, title="Correlation Analysis")
 
         if args.ttest_ind:
             try:
@@ -173,7 +173,7 @@ Usage Examples:
         if args.regression:
             v = data.resolve_variables(df, args.regression)
             results = stats.linear_regression(df, v[0], v[1])
-            ui.display_dict_as_table(results, title="Linear Regression")
+            ui.display_pairwise_results(results, title="Regression Analysis")
         return
 
     subparsers = parser.add_subparsers(dest="command", help="Subcommands")
@@ -235,10 +235,12 @@ Usage Examples:
         if args.plot: from pasp import plots; plots.render_boxplots(df, v[0], v[1])
     elif args.command == "correlation":
         v = data.resolve_variables(df, args.vars)
-        ui.display_header("Correlation Matrix"); ui.display_table(stats.correlation(df, v))
+        results = stats.correlation(df, v)
+        ui.display_pairwise_results(results, title="Correlation Analysis")
     elif args.command == "regression":
         v = data.resolve_variables(df, [args.dep, args.indep])
-        ui.display_dict_as_table(stats.linear_regression(df, v[0], v[1]), title="Linear Regression")
+        results = stats.linear_regression(df, v[0], v[1])
+        ui.display_pairwise_results(results, title="Regression Analysis")
 
 if __name__ == "__main__":
     main()

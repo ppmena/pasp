@@ -38,6 +38,15 @@ def check_homogeneity(groups):
     stat, p = stats.levene(*groups)
     return p > 0.05, p
 
+def check_bivariate_normality(data1, data2):
+    """
+    Check for bivariate normality.
+    Simplification: Both variables must be normally distributed (Shapiro-Wilk).
+    """
+    norm1, p1 = check_normality(data1)
+    norm2, p2 = check_normality(data2)
+    return (norm1 and norm2), p1, p2
+
 def descriptives(df, vars_list):
     """Calculate descriptive statistics with variable classification."""
     import numpy as np
@@ -319,35 +328,90 @@ def anova_oneway(df, var, group_var):
     }
 
 def correlation(df, vars_list):
-    """Calculate Pearson correlation matrix."""
-    import pandas as pd
-    temp_df = df[vars_list].dropna()
-    corr_matrix = temp_df.corr()
-    return corr_matrix
+    """Calculate pairwise correlations with automatic method selection (Pearson/Spearman)."""
+    from scipy import stats
+    import itertools
+
+    results = []
+    pairs = list(itertools.combinations(vars_list, 2))
+
+    for v1, v2 in pairs:
+        temp_df = df[[v1, v2]].dropna()
+        if len(temp_df) < 3:
+            continue
+
+        data1, data2 = temp_df[v1], temp_df[v2]
+        is_normal, p1, p2 = check_bivariate_normality(data1, data2)
+
+        if is_normal:
+            method = "Pearson"
+            r_val, p_val = stats.pearsonr(data1, data2)
+        else:
+            method = "Spearman"
+            r_val, p_val = stats.spearmanr(data1, data2)
+
+        results.append({
+            'Var 1': v1,
+            'Var 2': v2,
+            'Method': method,
+            'r': r_val,
+            'p': p_val,
+            'Normality': is_normal,
+            'p1': p1,
+            'p2': p2,
+            'N': len(temp_df)
+        })
+    return results
 
 def linear_regression(df, dep_var, indep_vars):
-    """Perform a simple/multiple linear regression."""
+    """Perform a linear regression or fallback to Spearman correlation if assumptions fail."""
     from scipy import stats
     if isinstance(indep_vars, str):
         indep_vars = [indep_vars]
 
     temp_df = df[[dep_var] + indep_vars].dropna()
-    y = temp_df[dep_var]
-    X = temp_df[indep_vars]
+    if temp_df.empty:
+        raise ValueError("No overlapping data for regression.")
 
     if len(indep_vars) == 1:
-        x = X.iloc[:, 0]
-        slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+        y = temp_df[dep_var]
+        x = temp_df[indep_vars[0]]
 
-        return {
-            'Dependent': dep_var,
-            'Independent': indep_vars[0],
-            'R': r_value,
-            'R-squared': r_value**2,
-            'Intercept': intercept,
-            'Slope': slope,
-            'p-value': p_value,
-            'Std.Error': std_err
-        }
+        is_normal, p1, p2 = check_bivariate_normality(y, x)
+
+        if is_normal:
+            slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+            return {
+                'Type': 'Regression',
+                'Dependent': dep_var,
+                'Independent': indep_vars[0],
+                'Method': 'Linear Regression (OLS)',
+                'R': r_value,
+                'R-squared': r_value**2,
+                'Intercept': intercept,
+                'Slope': slope,
+                'p-value': p_value,
+                'Std.Error': std_err,
+                'Normality': True,
+                'p_dep': p1,
+                'p_indep': p2,
+                'N': len(temp_df)
+            }
+        else:
+            # Fallback to Spearman
+            r_val, p_val = stats.spearmanr(y, x)
+            return {
+                'Type': 'Fallback',
+                'Dependent': dep_var,
+                'Independent': indep_vars[0],
+                'Method': 'Spearman Correlation (Fallback)',
+                'r': r_val,
+                'p-value': p_val,
+                'Normality': False,
+                'p_dep': p1,
+                'p_indep': p2,
+                'N': len(temp_df),
+                'Message': "Bivariate normality violated. Falling back to non-parametric correlation."
+            }
     else:
         raise NotImplementedError("Multiple regression not yet implemented.")

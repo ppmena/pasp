@@ -174,3 +174,45 @@ def display_info(message):
         m = m.replace("[blue]", "").replace("[/blue]", "")
         m = m.replace("[yellow]", "").replace("[/yellow]", "")
         print(m)
+
+def display_pairwise_results(results, title="Pairwise Analysis"):
+    """Display correlation or regression results in a pairwise text format."""
+    display_header(title)
+    if not results:
+        display_info("No results to display.")
+        return
+
+    if isinstance(results, dict):
+        results = [results]
+
+    for res in results:
+        v1 = res.get('Var 1') or res.get('Dependent')
+        v2 = res.get('Var 2') or res.get('Independent')
+        method = res.get('Method', 'Unknown')
+
+        display_info(f"\n[bold][{v1}] vs [{v2}][/bold]")
+        display_info(f"Method: {method}")
+
+        if 'r' in res:
+            r_val = res['r']
+            p_val = res['p'] if 'p' in res else res.get('p-value')
+            p_str = "< .001" if p_val < 0.001 else f"{p_val:.3f}"
+            display_info(f"Correlation (r): {r_val:.3f} (p = {p_str})")
+
+        if res.get('Type') == 'Regression':
+            r_val = res['R']
+            p_val = res['p-value']
+            p_str = "< .001" if p_val < 0.001 else f"{p_val:.3f}"
+            display_info(f"Model: R = {r_val:.3f}, R² = {res['R-squared']:.3f}")
+            display_info(f"Intercept: {res['Intercept']:.3f}, Slope: {res['Slope']:.3f}")
+            display_info(f"P-value: {p_str}, Std.Error: {res['Std.Error']:.3f}")
+
+        # Normality info
+        norm = res.get('Normality')
+        p1 = res.get('p1') or res.get('p_dep')
+        p2 = res.get('p2') or res.get('p_indep')
+        norm_status = "[green]Pass[/green]" if norm else "[red]Fail[/red]"
+        display_info(f"Bivariate Normality: {norm_status} (p1={p1:.3f}, p2={p2:.3f}, N={res.get('N')})")
+
+        if res.get('Message'):
+            display_info(f"[yellow]{res['Message']}[/yellow]")

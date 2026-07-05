@@ -36,7 +36,7 @@
 
 \lstset{style=mystyle}
 
-\title{\textbf{PASP: Portable Android Statistics Program}\\ \Large User Manual -- Version 0.4.1}
+\title{\textbf{PASP: Portable Android Statistics Program}\\ \Large User Manual -- Version 0.4.2}
 \author{Jules (Engineering AI)}
 \date{\today}
 
@@ -109,10 +109,18 @@ PASP automatically detects:
 \subsection{Intelligent Analysis}
 PASP automatically verifies statistical assumptions:
 \begin{itemize}
-    \item \textbf{Normality:} Shapiro-Wilk test (on residuals for ANOVA).
+    \item \textbf{Normality:} Shapiro-Wilk test (on residuals for ANOVA, or both variables for Correlation/Regression).
     \item \textbf{Homogeneity:} Levene's test.
 \end{itemize}
-If assumptions are violated, it intelligently switches to \textbf{Welch's} corrections or \textbf{Non-parametric} alternatives (Mann-Whitney U, Wilcoxon, Kruskal-Wallis).
+If assumptions are violated, it intelligently switches to \textbf{Welch's} corrections or \textbf{Non-parametric} alternatives (Mann-Whitney U, Wilcoxon, Kruskal-Wallis, Spearman).
+
+\subsection{Correlation and Regression (New in v0.4.2)}
+PASP now performs automatic \textbf{bivariate normality} checks.
+\begin{itemize}
+    \item If normality is met: Uses \textbf{Pearson} correlation and \textbf{Linear Regression (OLS)}.
+    \item If normality is violated: Automatically falls back to \textbf{Spearman} correlation.
+    \item Output format: Uses a clear text-based pairwise format optimized for narrow terminal screens.
+\end{itemize}
 
 \section{Command Reference}
 

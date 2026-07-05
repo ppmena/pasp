@@ -36,9 +36,16 @@ class TestStats(unittest.TestCase):
 
     def test_linear_regression(self):
         result = stats.linear_regression(self.df, 'b', 'a')
+        self.assertEqual(result['Type'], 'Regression')
         self.assertEqual(result['Slope'], 2.0)
         self.assertEqual(result['Intercept'], 0.0)
         self.assertEqual(result['R'], 1.0)
+
+    def test_correlation(self):
+        results = stats.correlation(self.df, ['a', 'b'])
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]['Method'], 'Pearson')
+        self.assertEqual(results[0]['r'], 1.0)
 
     def test_non_parametric_fallback(self):
         # Create non-normal data
