@@ -238,3 +238,28 @@ def display_regression(res):
         display_table(pd.DataFrame(desc_data))
 
     display_pairwise_results(res, title="Regression: Model Results")
+
+def display_chi_square(res):
+    """Specialized display for Chi-square results."""
+    import pandas as pd
+    display_header(res['Test'])
+
+    stats_data = {
+        'Variables': f"{res['Variables'][0]} vs {res['Variables'][1]}",
+        'Chi-square': res['Chi2'],
+        'df': res['df'],
+        'p-value': res['p'],
+        'Cramer\'s V': res['Cramer\'s V'],
+        'N': res['N']
+    }
+    display_dict_as_table(stats_data, title="Test Statistics")
+
+    if res.get('Warning'):
+        display_info(f"\n[yellow]{res['Warning']}[/yellow]")
+
+    display_header("Contingency Table (Observed)")
+    display_info(res['Contingency Table'])
+
+    display_header("Post-hoc Analysis: Adjusted Standardized Residuals")
+    ph_df = pd.DataFrame(res['Post-hoc Residuals'])
+    display_table(ph_df, footer="* Significant if |Std. Residual| > 1.96 (p < .05). Positive residuals indicate more cases than expected.")

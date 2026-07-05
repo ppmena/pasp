@@ -82,7 +82,7 @@ def descriptives(df, vars_list):
         results.append(desc)
     return pd.DataFrame(results)
 
-def ttest_one_sample(df, var, test_value=0):
+def ttest_one_sample(df, var, test_value=0, force_parametric=False):
     """Perform a one-sample t-test or Wilcoxon signed-rank test."""
     import numpy as np
     from scipy import stats
@@ -90,7 +90,7 @@ def ttest_one_sample(df, var, test_value=0):
 
     is_normal, p_norm = check_normality(data)
 
-    if is_normal:
+    if is_normal or force_parametric:
         test_name = "One-sample T-Test"
         t_stat, p_val = stats.ttest_1samp(data, test_value)
         es_label = "Cohen's d (d)"
@@ -113,7 +113,7 @@ def ttest_one_sample(df, var, test_value=0):
         'Normality p': p_norm
     }
 
-def ttest_independent(df, var, group_var):
+def ttest_independent(df, var, group_var, force_parametric=False):
     """Perform an independent samples t-test, Welch's t-test, or Mann-Whitney U test."""
     import numpy as np
     from scipy import stats
@@ -128,7 +128,7 @@ def ttest_independent(df, var, group_var):
     norm2, p_norm2 = check_normality(g2_data)
     homog, p_homog = check_homogeneity([g1_data, g2_data])
 
-    if norm1 and norm2:
+    if (norm1 and norm2) or force_parametric:
         if homog:
             test_name = "Independent Samples T-Test"
             t_stat, p_val = stats.ttest_ind(g1_data, g2_data)
@@ -166,7 +166,7 @@ def ttest_independent(df, var, group_var):
         'Homogeneity p': p_homog
     }
 
-def ttest_paired(df, var1, var2):
+def ttest_paired(df, var1, var2, force_parametric=False):
     """Perform a paired samples t-test or Wilcoxon signed-rank test."""
     import numpy as np
     from scipy import stats
@@ -177,7 +177,7 @@ def ttest_paired(df, var1, var2):
 
     is_normal, p_norm = check_normality(diff)
 
-    if is_normal:
+    if is_normal or force_parametric:
         test_name = "Paired Samples T-Test"
         t_stat, p_val = stats.ttest_rel(g1_data, g2_data)
         es_label = "Cohen's d (d)"
@@ -198,7 +198,7 @@ def ttest_paired(df, var1, var2):
         'Normality p (diff)': p_norm
     }
 
-def anova_oneway(df, var, group_var):
+def anova_oneway(df, var, group_var, force_parametric=False):
     """Perform a one-way ANOVA with strict assumption evaluation."""
     import numpy as np
     from scipy import stats
@@ -222,7 +222,7 @@ def anova_oneway(df, var, group_var):
     outliers = clean_df[np.abs(std_residual) > 3]
     has_outliers = not outliers.empty
 
-    if is_normal:
+    if is_normal or force_parametric:
         if homog:
             test_name = "One-way ANOVA"
             f_stat, p_val = stats.f_oneway(*data_groups)
@@ -327,7 +327,7 @@ def anova_oneway(df, var, group_var):
         }
     }
 
-def correlation(df, vars_list):
+def correlation(df, vars_list, force_parametric=False):
     """Calculate pairwise correlations with automatic method selection (Pearson/Spearman)."""
     from scipy import stats
     import itertools
@@ -343,7 +343,7 @@ def correlation(df, vars_list):
         data1, data2 = temp_df[v1], temp_df[v2]
         is_normal, p1, p2 = check_bivariate_normality(data1, data2)
 
-        if is_normal:
+        if is_normal or force_parametric:
             method = "Pearson"
             r_val, p_val = stats.pearsonr(data1, data2)
         else:
@@ -363,7 +363,7 @@ def correlation(df, vars_list):
         })
     return results
 
-def linear_regression(df, dep_var, indep_vars):
+def linear_regression(df, dep_var, indep_vars, force_parametric=False):
     """Perform a linear regression or fallback to Spearman correlation if assumptions fail."""
     import numpy as np
     from scipy import stats
@@ -396,7 +396,7 @@ def linear_regression(df, dep_var, indep_vars):
             indep_vars[0]: get_stats(x)
         }
 
-        if is_normal:
+        if is_normal or force_parametric:
             slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
             return {
                 'Type': 'Regression',
@@ -434,3 +434,71 @@ def linear_regression(df, dep_var, indep_vars):
             }
     else:
         raise NotImplementedError("Multiple regression not yet implemented.")
+
+def chi_square_independence(df, var1, var2):
+    """
+    Perform a Chi-square test of independence between two nominal/ordinal variables.
+    Variables should have up to 4 unique values each.
+    Includes post-hoc analysis using standardized residuals.
+    """
+    import numpy as np
+    import pandas as pd
+    from scipy import stats
+
+    clean_df = df[[var1, var2]].dropna()
+    if clean_df.empty:
+        raise ValueError("No overlapping data for Chi-square analysis.")
+
+    # Validate number of unique values
+    u1, u2 = clean_df[var1].nunique(), clean_df[var2].nunique()
+    warning = None
+    if u1 > 4 or u2 > 4:
+         warning = f"Warning: {var1} has {u1} values, {var2} has {u2} values. Chi-square is recommended for variables with few categories."
+
+    contingency_table = pd.crosstab(clean_df[var1], clean_df[var2])
+    chi2, p_val, dof, expected = stats.chi2_contingency(contingency_table)
+
+    # Effect size: Cramer's V
+    n = len(clean_df)
+    min_dim = min(contingency_table.shape) - 1
+    cramers_v = np.sqrt(chi2 / (n * min_dim)) if min_dim > 0 else 0
+
+    # Post-hoc: Standardized Residuals
+    # z = (observed - expected) / sqrt(expected * (1 - row_prob) * (1 - col_prob))
+    row_sums = contingency_table.sum(axis=1).values
+    col_sums = contingency_table.sum(axis=0).values
+    total_sum = n
+
+    residuals = []
+    for i, row_idx in enumerate(contingency_table.index):
+        for j, col_idx in enumerate(contingency_table.columns):
+            observed = contingency_table.iloc[i, j]
+            exp = expected[i, j]
+            row_p = row_sums[i] / total_sum
+            col_p = col_sums[j] / total_sum
+
+            # Adjusted Standardized Residual
+            denom = np.sqrt(exp * (1 - row_p) * (1 - col_p))
+            std_resid = (observed - exp) / denom if denom > 0 else 0
+
+            residuals.append({
+                'Variable 1': row_idx,
+                'Variable 2': col_idx,
+                'Observed': observed,
+                'Expected': f"{exp:.2f}",
+                'Std. Residual': std_resid,
+                'Significant': "Yes" if abs(std_resid) > 1.96 else "No"
+            })
+
+    return {
+        'Test': 'Chi-square Test of Independence',
+        'Variables': [var1, var2],
+        'Chi2': chi2,
+        'df': dof,
+        'p': p_val,
+        'Cramer\'s V': cramers_v,
+        'Contingency Table': contingency_table,
+        'Post-hoc Residuals': residuals,
+        'N': n,
+        'Warning': warning
+    }

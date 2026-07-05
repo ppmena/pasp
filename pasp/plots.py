@@ -170,3 +170,62 @@ def render_regression_plot(df, x_var, y_var, slope, intercept):
         console.print("│" + "".join(row))
     console.print("└" + "─" * WIDTH)
     console.print(f"{x_min:.1f}".ljust(WIDTH // 2) + f"{x_max:.1f}".rjust(WIDTH // 2 + (WIDTH % 2)))
+
+def render_histogram(series, name, mark_val=None):
+    """
+    Renders a histogram for a single variable in the terminal.
+    Optionally marks a specific value (e.g., test value in one-sample t-test).
+    """
+    from rich.console import Console
+    from rich.text import Text
+    from rich.panel import Panel
+
+    console = Console()
+    data = series.dropna().values
+    if len(data) == 0: return
+
+    NUM_BINS = 20
+    MAX_HEIGHT = 10
+
+    min_val, max_val = np.min(data), np.max(data)
+    if min_val == max_val: max_val += 1
+
+    bins = np.linspace(min_val, max_val, NUM_BINS + 1)
+    freq, _ = np.histogram(data, bins=bins)
+
+    max_freq = np.max(freq)
+    if max_freq == 0: return
+
+    scale = MAX_HEIGHT / max_freq
+    f_s = (freq * scale).astype(int)
+
+    title = f"Distribution: {name}"
+    console.print(Panel(f"[bold]{title}[/bold]", expand=False))
+
+    for h in range(MAX_HEIGHT, 0, -1):
+        line = Text("│", style="white")
+        for b in range(NUM_BINS):
+            char = " "
+            style = ""
+            if f_s[b] >= h:
+                char, style = "█", "bold cyan"
+
+            # Highlight bin containing mark_val
+            if mark_val is not None and bins[b] <= mark_val < bins[b+1]:
+                 if f_s[b] < h and h == 1: # base mark
+                     char, style = "▲", "bold yellow"
+                 elif f_s[b] >= h:
+                     style = "bold yellow"
+
+            line.append(char * 2, style=style)
+        console.print(line)
+
+    console.print("└" + "─" * (NUM_BINS * 2))
+    console.print(f"{min_val:.1f}".ljust(NUM_BINS) + f"{max_val:.1f}".rjust(NUM_BINS))
+    if mark_val is not None:
+        console.print(f"  [bold yellow]▲[/bold yellow] Mark: {mark_val:.2f}")
+
+def render_diff_histogram(data1, data2, name1, name2):
+    """Renders a histogram of the differences between two paired variables."""
+    diff = data1 - data2
+    render_histogram(diff, f"Differences ({name1} - {name2})", mark_val=0)
