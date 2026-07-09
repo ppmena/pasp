@@ -1,6 +1,6 @@
 # PASP: Portable Android Statistics Program
 
-PASP is a lightweight, local statistical analysis tool designed for the terminal. Inspired by the philosophy of JASP, it aims to provide a clean and intuitive interface for statistical analysis, specifically optimized for use in mobile environments like **Android with Termux**, as well as any other terminal.
+PASP is a lightweight, local statistical analysis tool designed for the terminal. Inspired by the philosophy of JASP, it aims to provide a clean and intuitive interface for statistical analysis. While specifically optimized for mobile environments like **Android with Termux**, PASP is **fully cross-platform** and can be installed on any operating system (Windows, macOS, Linux) with Python and pip.
 
 ## Features
 
