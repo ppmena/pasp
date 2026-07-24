@@ -1,163 +1,229 @@
-\documentclass[a4paper,12pt]{article}
+\documentclass[a4paper,11pt,oneside]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[english]{babel}
-\usepackage{hyperref}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{geometry}
 \usepackage{listings}
 \usepackage{xcolor}
-\usepackage{geometry}
+\usepackage{hyperref}
 \usepackage{graphicx}
-\usepackage{booktabs}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{fancyhdr}
 
-\geometry{margin=1in}
+\geometry{
+    top=1.2in,
+    bottom=1.2in,
+    left=1in,
+    right=1in
+}
 
+\definecolor{primary}{RGB}{31, 78, 121}
+\definecolor{secondary}{RGB}{128, 0, 128}
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
 \definecolor{codepurple}{rgb}{0.58,0,0.82}
-\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{backcolour}{rgb}{0.97,0.97,0.96}
 
-\lstdefinestyle{mystyle}{
+\lstdefinestyle{paspstyle}{
     backgroundcolor=\color{backcolour},
-    commentstyle=\color{codegray},
-    keywordstyle=\color{magenta},
+    commentstyle=\color{codegray}\itshape,
+    keywordstyle=\color{primary}\bfseries,
     numberstyle=\tiny\color{codegray},
-    stringstyle=\color{codepurple},
-    basicstyle=\ttfamily\footnotesize,
+    stringstyle=\color{secondary},
+    basicstyle=\ttfamily\small,
     breakatwhitespace=false,
     breaklines=true,
     captionpos=b,
     keepspaces=true,
     numbers=left,
-    numbersep=5pt,
+    numbersep=8pt,
     showspaces=false,
     showstringspaces=false,
     showtabs=false,
-    tabsize=2
+    tabsize=4
+}
+\lstset{style=paspstyle}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    filecolor=secondary,
+    urlcolor=primary,
+    pdftitle={PASP User Manual},
 }
 
-\lstset{style=mystyle}
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textcolor{primary}{\bfseries PASP User Manual}}
+\lhead{v0.4.3}
+\rfoot{\thepage}
 
-\title{\textbf{PASP: Portable Android Statistics Program}\\ \Large User Manual -- Version 0.4.3}
-\author{Jules (Engineering AI)}
+\titleformat{\section}{\color{primary}\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\color{secondary}\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+\title{
+    \vspace{-2cm}
+    \textbf{\Huge PASP}\\
+    \vspace{0.5cm}
+    \textbf{\Large Portable Android Statistics Program}\\
+    \vspace{1cm}
+    \large Professional User Manual \& Technical Reference\\
+    \small Document Version 0.4.3
+}
+\author{\textbf{Engineering Team}}
 \date{\today}
 
 \begin{document}
 
 \maketitle
+\thispagestyle{empty}
+\newpage
+
 \tableofcontents
 \newpage
 
 \section{Introduction}
-PASP (Portable Android Statistics Program) is a lightweight, local statistical analysis tool designed for the terminal. Inspired by the philosophy of JASP, it aims to provide a clean and intuitive interface for statistical analysis, specifically optimized for mobile environments like \textbf{Android with Termux}, but fully compatible with any modern terminal.
 
-\section{Installation}
-PASP can be installed directly from GitHub.
+\begin{tcolorbox}[colback=backcolour,colframe=primary,title=Project Philosophy]
+PASP (Portable Android Statistics Program) is a lightweight, local, interactive command-line interface (CLI) statistical analysis program. Designed specifically to work in terminal-restricted environments like \textbf{Android Termux}, it is fully cross-platform and compatible with any desktop operating system (Linux, macOS, Windows).
+\end{tcolorbox}
+
+The philosophy of PASP is inspired by \textbf{JASP} (Jeffrey's Amazing Statistics Program), emphasizing:
+\begin{itemize}
+    \item \textbf{Scientific Rigor:} Strict, automated assumption checking (normality, homogeneity, outlier detection).
+    \item \textbf{Adaptive Workflows:} Transparent, automated fallback to robust or non-parametric alternatives when assumptions are violated.
+    \item \textbf{Mobile-First Optimization:} Fast CLI startup via \emph{Lazy Loading} of heavy mathematical dependencies, plain-text fallbacks, and beautiful APA-styled tabular terminal outputs using Unicode characters.
+    \item \textbf{Ease of Use:} Native support for variable column index referencing instead of full string names.
+\end{itemize}
+
+---
+
+\section{System Architecture \& Installation}
+
+\subsection{Dependencies}
+PASP requires a Python 3.7+ environment and relies on the standard Python scientific stack:
+\begin{itemize}
+    \item \textbf{pandas} (Data handling, encoding/delimiter auto-detection)
+    \item \textbf{numpy} (Array manipulations)
+    \item \textbf{scipy} (Statistical test engines)
+    \item \textbf{statsmodels} (Residual diagnostics, outlier evaluation, robust metrics)
+    \item \textbf{rich} (Terminal table formatting)
+\end{itemize}
 
 \subsection{Standard Installation}
+To install PASP on any modern operating system:
 \begin{lstlisting}[language=bash]
-pip install git+https://github.com/ppmena/pasp
+pip install git+https://github.com/ppmena/PASP
 \end{lstlisting}
 
-\subsection{Recommended for Termux (Android)}
-To ensure all scientific dependencies (\texttt{numpy}, \texttt{scipy}, \texttt{pandas}) compile correctly in Termux, install the build tools first:
+\subsection{Android Termux Setup}
+Termux requires setting up system libraries before compiling SciPy/Pandas:
 \begin{lstlisting}[language=bash]
 pkg update && pkg upgrade
 pkg install python clang make cmake pkg-config ninja meson
-pip install git+https://github.com/ppmena/pasp
+pip install --no-build-isolation git+https://github.com/ppmena/PASP
 \end{lstlisting}
 
-\subsection{Updating PASP}
-Stay on the latest version using the built-in update command:
+\subsection{Diagnostic \& Help Commands}
+\begin{itemize}
+    \item \texttt{pasp doctor}: Validates your installation, system paths, and dependencies.
+    \item \texttt{pasp install-help}: Displays detailed, platform-specific guides.
+    \item \texttt{pasp examples}: Lists example CSV files bundled with the package.
+\end{itemize}
+
+---
+
+\section{Command Line Interface (CLI)}
+
+PASP supports two flexible interaction styles.
+
+\subsection{Style A: Direct Usage}
 \begin{lstlisting}[language=bash]
-pasp update
-# OR
-pasp --update
+pasp [file] [flags] [arguments]
 \end{lstlisting}
-
-\section{Usage Styles}
-PASP supports two distinct CLI styles to suit different workflows.
-
-\subsection{Style A: Direct File Usage}
-Pass the file as the first argument followed by operation flags.
+\textbf{Examples:}
 \begin{lstlisting}[language=bash]
 pasp data.csv --auto
-pasp data.csv --ttest-ind score group --plot
+pasp data.csv --anova score group --plot
+pasp data.csv --descriptives --vars age income
 \end{lstlisting}
 
 \subsection{Style B: Subcommands}
-Use specific subcommands for structured control.
+\begin{lstlisting}[language=bash]
+pasp [subcommand] [file] [arguments]
+\end{lstlisting}
+\textbf{Examples:}
 \begin{lstlisting}[language=bash]
 pasp descriptives data.csv
-pasp anova data.csv var group
+pasp ttest-ind data.csv score group --plot
+pasp chi-square data.csv gender profession
 \end{lstlisting}
 
-\section{Core Features}
+---
 
-\subsection{Variable Indexing (New in v0.4.0)}
-Instead of typing full variable names, you can refer to them by their numerical index (starting from 0). Running \texttt{pasp [file] --summary} will show the index for each column.
-\textbf{Example:} If \texttt{score} is column 2 and \texttt{group} is column 1:
-\begin{lstlisting}[language=bash]
-pasp data.csv --ttest-ind 2 1
-\end{lstlisting}
+\section{Variable Classification \& Descriptives}
 
-\subsection{Smart Data Loading}
-PASP automatically detects:
+\subsection{Variable Classification Rules}
+PASP dynamically classifies variables based on data types and frequency properties:
 \begin{itemize}
-    \item \textbf{Delimiters:} Comma (\texttt{,}), Semicolon (\texttt{;}), Tab (\texttt{\textbackslash t}), or Pipe (\texttt{|}).
-    \item \textbf{Encoding:} UTF-8 or Latin-1.
+    \item \textbf{Nominal:} Text columns, booleans, or objects.
+    \item \textbf{Ordinal:} Integers or numeric columns with $\leq 4$ unique values.
+    \item \textbf{Scale:} Continuous numeric columns with $> 4$ unique values.
 \end{itemize}
+\emph{Note: Nominal variables omit continuous tendencies like Mean and SD; mode and frequencies are reported instead.}
 
-\subsection{Intelligent Analysis}
-PASP automatically verifies statistical assumptions:
-\begin{itemize}
-    \item \textbf{Normality:} Shapiro-Wilk test (on residuals for ANOVA, or both variables for Correlation/Regression).
-    \item \textbf{Homogeneity:} Levene's test.
-\end{itemize}
-If assumptions are violated, it intelligently switches to \textbf{Welch's} corrections or \textbf{Non-parametric} alternatives (Mann-Whitney U, Wilcoxon, Kruskal-Wallis, Spearman).
+\subsection{The --plot Flag for Descriptives}
+Enabling \texttt{--plot} on descriptives generates high-fidelity vertical histograms using terminal-friendly block symbols (\texttt{█}) for all numeric scale variables, showing the density distribution clearly.
 
-\subsection{Correlation and Regression (New in v0.4.3)}
-PASP now performs automatic \textbf{bivariate normality} checks.
-\begin{itemize}
-    \item If normality is met: Uses \textbf{Pearson} correlation and \textbf{Linear Regression (OLS)}.
-    \item If normality is violated: Automatically falls back to \textbf{Spearman} correlation.
-    \item \textbf{Preliminary Analysis:} Displays Mean, SD, Normality (p), Skewness, and Kurtosis for analyzed variables.
-    \item \textbf{Visualizations:} Supports terminal scatter plots with regression lines using the \texttt{--plot} flag.
-    \item Output format: Uses a clear text-based pairwise format optimized for narrow terminal screens.
-\end{itemize}
+---
 
-\section{Command Reference}
-
-\subsection{Descriptive Statistics}
-Classifies variables as Nominal, Ordinal, or Scale.
-\begin{itemize}
-    \item \texttt{--descriptives}: Flag for Style A.
-    \item \texttt{descriptives}: Subcommand for Style B.
-\end{itemize}
+\section{Statistical Methods \& Technical Formulations}
 
 \subsection{Independent Samples T-Test}
-Includes an optional comparative histogram.
+Calculates differences between two group means.
 \begin{itemize}
-    \item \texttt{--plot}: Enables visual distribution plot.
-\end{itemize}
-\textbf{Example:}
-\begin{lstlisting}[language=bash]
-pasp examples/ejemplo_ttest.csv --ttest-ind 2 1 --plot
-\end{lstlisting}
-
-\subsection{One-Way ANOVA}
-Includes automatic Bonferroni Post-Hoc comparisons and \textbf{Dunn's test} for non-parametric cases. Use \texttt{--plot} for group boxplots.
-\textbf{Example:}
-\begin{lstlisting}[language=bash]
-pasp data.csv --anova 3 5 --plot
-\end{lstlisting}
-
-\section{Utility Commands}
-\begin{itemize}
-    \item \texttt{pasp doctor}: Diagnostic report for the environment.
-    \item \texttt{pasp examples}: Lists built-in datasets.
-    \item \texttt{pasp install-help}: Displays detailed installation guides.
+    \item \textbf{Assumption Check:} Normal distribution of both group samples via Shapiro-Wilk:
+    \begin{equation}
+    W = \frac{\left(\sum_{i=1}^n a_i x_{(i)}\right)^2}{\sum_{i=1}^n (x_i - \bar{x})^2}
+    \end{equation}
+    And homogeneity of variance using Levene's test ($p > 0.05$).
+    \item \textbf{Fallback:}
+    \begin{itemize}
+        \item If normal but heterogeneous variance: Uses \textbf{Welch's T-Test}.
+        \item If non-normal: Automatically falls back to \textbf{Mann-Whitney U Test} and reports Rank-Biserial $r$ as effect size.
+    \end{itemize}
+    \item \textbf{Force Option:} Bypasses these fallbacks with \texttt{--force-parametric} to strictly calculate the Student's T-Test.
+    \item \textbf{Visual Plot:} Generates comparative overlapping block-histograms highlighting group distribution overlaps.
 \end{itemize}
 
-\section{License}
-PASP is released under the MIT License.
+\subsection{One-way ANOVA}
+Performs analysis of variance across $\geq 2$ groups.
+\begin{itemize}
+    \item \textbf{Verification Protocol:} Tests model residuals for normality and evaluates homogeneity with Levene. Outliers are flagged if standardized residuals $|z| > 3$.
+    \item \textbf{Non-parametric Alternative:} Automatically runs the \textbf{Kruskal-Wallis H Test} with **Dunn's Post-Hoc** test.
+    \item \textbf{Post-Hoc comparisons:} Runs pairwise combinations using a pooled standard deviation and Bonferroni adjusted $p$-values.
+    \item \textbf{Visual Plot:} Groups are plotted as horizontal boxplots.
+\end{itemize}
+
+\subsection{Chi-Square Test of Independence}
+Evaluates the association between two nominal or ordinal variables.
+\begin{itemize}
+    \item \textbf{Model Math:} Calculates the Pearson Chi-Square statistic:
+    \begin{equation}
+    \chi^2 = \sum \frac{(O_i - E_i)^2}{E_i}
+    \end{equation}
+    \item \textbf{Effect Size:} Cramer's $V$:
+    \begin{equation}
+    V = \sqrt{\frac{\chi^2}{N(k - 1)}}
+    \end{equation}
+    \item \textbf{Post-Hoc Analysis:} Evaluates adjusted standardized residuals for each cell. High residuals ($|z| > 1.96$) indicate cells driving the dependence.
+\end{itemize}
+
+---
+
+\section{Troubleshooting \& Support}
+Use \texttt{pasp doctor} to get a fully detailed report of package paths, system OS, and dependencies. For errors or updates, consult the official repository at \url{https://github.com/ppmena/PASP}.
 
 \end{document}
