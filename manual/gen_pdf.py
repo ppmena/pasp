@@ -19,7 +19,7 @@ def generate_manual():
     pdf.set_font('Arial', 'B', 24)
     pdf.cell(0, 40, 'PASP User Manual', 0, 1, 'C')
     pdf.set_font('Arial', '', 14)
-    pdf.cell(0, 10, 'Version 0.4.1', 0, 1, 'C')
+    pdf.cell(0, 10, 'Version 0.4.3', 0, 1, 'C')
     pdf.ln(20)
 
     # Intro
@@ -50,13 +50,16 @@ def generate_manual():
     pdf.cell(0, 10, '4. Commands Reference', 0, 1)
 
     commands = [
-        ('descriptives', 'Calculate mean, median, SD, and classify variables.'),
-        ('ttest-one', 'One-sample T-test with normality checks.'),
-        ('ttest-ind', 'Independent samples T-test with optional --plot.'),
-        ('anova', 'One-way ANOVA with post-hoc comparisons.'),
-        ('regression', 'Simple linear regression analysis.'),
-        ('doctor', 'Check environment and dependencies.'),
-        ('update', 'Update PASP to the latest version.')
+        ('descriptives', 'Calculate mean, median, SD, and classify variables as Nominal, Ordinal, or Scale.'),
+        ('ttest-one', 'One-sample T-test with automatic Shapiro-Wilk normality fallback.'),
+        ('ttest-ind', 'Independent samples T-test with Levene homogeneity and comparative histograms.'),
+        ('ttest-paired', 'Paired samples T-test with differences normality evaluation.'),
+        ('anova', 'One-way ANOVA with strict residuals normality, Levene check, and Bonferroni Post-Hoc.'),
+        ('correlation', 'Bivariate Pearson/Spearman correlation matrices.'),
+        ('regression', 'Simple linear OLS regression with preliminary descriptives and scatter plots.'),
+        ('chi-square', 'Chi-square test of independence for categorical variables with Cramer\'s V and standardized residuals.'),
+        ('doctor', 'Diagnostic report of dependencies and system environment.'),
+        ('update', 'Upgrade PASP dynamically to the latest version from GitHub.')
     ]
 
     for cmd, desc in commands:
